@@ -15,7 +15,7 @@ ClipsOS is a **white-label, multi-tenant operating system for short-form content
 | Video Playback | Cloudflare Stream (HLS) |
 | Video Storage | Cloudflare R2 (original quality) |
 | Payments | Stripe |
-| Email | Lovable Native Email |
+| Email | Resend (staying with v1 provider) |
 | Hosting | Lovable (auto-deploy) |
 
 ## Supabase Project
@@ -26,7 +26,7 @@ ClipsOS is a **white-label, multi-tenant operating system for short-form content
 
 ## GitHub Repository
 
-- **Repo:** `M-ADIB/clipsapp-v2`
+- **Repo:** `M-ADIB/clipsos-hub`
 - **Default Branch:** `main`
 
 ## Core Architecture Principles

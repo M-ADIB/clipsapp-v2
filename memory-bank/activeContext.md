@@ -2,7 +2,7 @@
 
 > Last updated: 2026-04-26
 
-## Current Phase: Frontend Handoff → Lovable 🔜
+## Current Phase: Management & Branding Infrastructure 🔄
 
 ### Database Status: COMPLETE ✅
 All 28 migrations deployed. 60+ tables, 100+ RLS policies, 1 intentional lint (stripe_events_log locked).
@@ -17,24 +17,51 @@ All 28 migrations deployed. 60+ tables, 100+ RLS policies, 1 intentional lint (s
 | Phase 5: Finance | stripe_charges, stripe_subscriptions, stripe_events_log, finance_transactions | ✅ |
 | Phase 6: Studio/AI/Email/Tasks | client_foundation, studio_scripts, studio_hooks, content_vault, ai_prompts, email_templates, email_queue, video_status_history, client_onboarding, client_journey_steps, credentials, tasks | ✅ |
 
-### Frontend Handoff Documentation: READY ✅
-- `memory-bank/style-theme.md` — Colors, typography, spacing, component patterns
-- `memory-bank/wireframes.md` — Page layouts for all 8 role dashboards
-- Lovable Handoff Prompt — Full context artifact for Level Bill
+### Frontend: Dashboard Pages IN PROGRESS 🔄
 
-### What Lovable Should Build First (Sprint 1)
-1. Initialize Supabase client with typed hooks
-2. Build auth flow (login, signup, Google OAuth, role-based redirect)
-3. Create layout shell (sidebar + topnav + PageShell)
-4. Build component primitives (DataTable, StatusBadge, EntityCard)
+**Navigation Architecture (STANDARDIZED):**
+- **Universal TopNav** — one bar, every page, never hides
+  - Left: title + optional tabs (via `WorkspaceContext`)
+  - Right: Ask Clips ✨ + ☀/🌙 theme toggle (functional via BrandingContext) + 🔔 bell
+  - No role badges in the header
+- **Sidebar** — collapse/expand toggle inside sidebar (next to logo)
+  - `SidebarTrigger` lives in `AppSidebar`, NOT in `AppShell` header
+  - Logo and app name are dynamic via `useBranding()` (supports image or text fallback)
+  - Search bar uses semantic tokens (no hardcoded hex)
+- **No duplicate page headings** — the header bar shows the page name, no in-page h1 repeats it
+- **WorkspaceContext** — pages call `setHeaderConfig()` to configure the header's left side (title + tabs)
+- **Management section** — added to owner sidebar nav, above profile card
+
+**Client Workspace Tabs (built):**
+| Tab | Status | Content |
+|-----|--------|---------|
+| Overview | ✅ | Pipeline cards, projects, growth chart, notes |
+| Production | ✅ | Sub-nav (All Plans, Cycles), DataTable |
+| Content | 🚧 | Placeholder |
+| Journey | ✅ | Vertical timeline, step states, progress card |
+| Sales | ✅ | 3 stat cards, subscriptions, payment history, activity feed |
+| Analytics | 🚧 | Placeholder |
+| Activity | 🚧 | Placeholder |
+| Settings | 🚧 | Placeholder |
+
+**CRM Page (built):**
+- People table with sort/filter/import/export toolbar
+- Two-line header: list selector + toolbar controls
+
+### What to Build Next
+1. Polish App Branding page (file upload for logos instead of URL input)
+2. Build Integrations Management sub-page
+3. Connect static data to Supabase/TanStack Query for remaining pages
+4. Build CRM Pipeline/Deals views
 
 ### Key Architecture Decisions Made
 - All CRM tables have `tenant_id` (legacy didn't)
 - `sales_territories` → `closer_regions`
 - `content_comments` → unified `video_comments`
 - `activity_log` added for audit trail (new in V2)
-- `ai_prompts` per-tenant editable system prompts (new in V2)
-- `email_queue` for unified email sending (new in V2)
-- `client_journey_steps` for 16-step delivery timeline (new in V2)
-- Finance tables are Owner-only at RLS level (not just UI hiding)
-- `stripe_events_log` intentionally has no RLS policies (service_role only)
+- **Universal header bar** — one TopNav component, context-driven content
+- **No duplicate headings** — nav bar is the single source of truth for page identity
+- **Dual theme support** — `:root` = light mode, `.dark` = dark mode in CSS; BrandingContext controls switching
+- **BrandingContext** — wraps the entire app (inside AuthProvider); loads tenant-specific branding on auth
+- **All hardcoded colors converted to semantic tokens** — TopNav, Sidebar, Search bar all use `var(--*)` tokens
+- **Font: Arial** for all body text (per user directive), display font for headings
