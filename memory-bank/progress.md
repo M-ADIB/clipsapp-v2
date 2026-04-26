@@ -8,8 +8,7 @@
 - [x] Seed tenant defaults, search_path security fix
 
 ## Phase 1: Core Domain ✅ (8 migrations)
-- [x] 6 enums (workspace_type, account_status, project_status, project_cadence, content_priority, upload_status)
-- [x] clients, client_members, client_access, client_team_assignments
+- [x] 6 enums + clients, client_members, client_access, client_team_assignments
 - [x] project_type_templates, projects, cycles
 - [x] videos, video_versions, video_editors, trial_reels, thumbnail_versions
 - [x] 30+ RLS policies
@@ -19,41 +18,45 @@
 - [x] video_comments, comment_attachments, video_annotations
 - [x] guest_review_links, client_invitations
 - [x] notifications, notification_preferences, push_subscriptions
-- [x] 2 enums (notification_type, notification_priority)
-- [x] user_can_access_chat_room() helper function
 - [x] Phase 2 RLS policies
 
 ## Phase 3: CRM ✅ (4 migrations)
-- [x] crm_companies, crm_people (+ clients.person_id FK wired)
-- [x] crm_deals, crm_deal_options, crm_editors
-- [x] leads, partnership_applications
-- [x] follow_ups, calendly_events, closer_regions
+- [x] crm_companies, crm_people, crm_deals, crm_deal_options, crm_editors
+- [x] leads, partnership_applications, follow_ups, calendly_events, closer_regions
 - [x] Phase 3 RLS policies
 
 ## Phase 4: Utility ✅ (1 migration)
 - [x] saved_filter_views, custom_columns, custom_column_values
-- [x] activity_log (audit trail)
-- [x] leads_custom_columns, leads_saved_views
-- [x] Phase 4 RLS policies
+- [x] activity_log, leads_custom_columns, leads_saved_views
 
-## Remaining Work
-- [ ] **Finance tables** — stripe_charges, invoices, expenses, payroll (Phase 5)
-- [ ] **Frontend scaffolding** — Vite/React project init, routing, auth flow
-- [ ] **Component library** — DataTable, PageShell, StatusBadge, EntityCard
-- [ ] **Supabase client hooks** — typed queries for all tables
-- [ ] **Real-time subscriptions** — chat, notifications, video status changes
+## Phase 5: Finance ✅ (1 migration)
+- [x] stripe_charges, stripe_subscriptions, stripe_events_log
+- [x] finance_transactions (manual ledger)
+- [x] Owner-only RLS + client view-own policies
 
-## Infrastructure
-- [x] Memory Bank (4 files)
-- [x] AGENTS.md
-- [x] GitHub repo (M-ADIB/clipsapp-v2) — public, MCP connected
-- [x] Supabase project (toyekrhhzqmltstrycdv) — MCP connected
-- [x] Security audit: **0 lints across 25 migrations**
+## Phase 6: Studio, AI, Email, Tasks ✅ (2 migrations)
+- [x] client_foundation, studio_scripts, studio_hooks, content_vault
+- [x] ai_prompts, email_templates, email_queue
+- [x] video_status_history, client_onboarding, client_journey_steps
+- [x] credentials, tasks
+- [x] Phase 5-6 RLS policies
 
-## Stats
-- **25 migrations** deployed
-- **45+ tables** with RLS enabled
-- **80+ RLS policies**
-- **8 security-definer helper functions**
+## Database: COMPLETE ✅
+
+### Final Stats
+- **28 migrations** deployed
+- **60+ tables** with RLS enabled
+- **100+ RLS policies**
+- **9 security-definer helper functions**
 - **8 custom enums**
-- **0 security lints**
+- **1 intentional lint** (stripe_events_log — locked by design)
+
+## Frontend: NOT STARTED 🔜
+
+### Handoff Ready
+- [x] `memory-bank/style-theme.md` — Full design system tokens
+- [x] `memory-bank/wireframes.md` — Page-by-page layouts
+- [x] `memory-bank/projectbrief.md` — Architecture overview
+- [x] `memory-bank/systemPatterns.md` — Code patterns
+- [x] `AGENTS.md` — Agent directive
+- [x] Lovable prompt created — ready for frontend kickoff
