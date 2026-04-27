@@ -118,7 +118,7 @@
 - [x] `memory-bank/activeContext.md` — Current sprint context
 - [x] `AGENTS.md` — Agent directive
 
-### Dashboard Pages 🔄 (11/13 pages, 8/8 workspace tabs ✅)
+### Dashboard Pages 🔄 (12/13 pages, 8/8 workspace tabs ✅)
 - **Owner Dashboard** (2 tabs):
   - [x] Sales Overview — stat cards + pipeline + payment status + activity feed
   - [x] Production Overview — velocity chart + 2×2 stat cards + video review cards
@@ -137,11 +137,11 @@
   - [x] Activity tab — filterable feed wired to useActivityLog(entityType:client)
   - [x] Settings tab — form wired to useClient() + useUpdateClient() with save/error feedback
   - [x] clientId from route params, client name fetched dynamically
-- **Management (Owner):**
+- **Management (Owner Settings):**
   - [x] App Branding — color palette editor, logo URLs, live preview, mode toggle
   - [x] Team — `useInviteMember` mutation, edge function integration, dynamic stats
   - [x] Billing — `useStripeSubscriptions` integration, live MRR calculation
-  - [ ] Integrations
+  - [x] Integrations — Stripe, Calendly, Slack, Resend cards with connect/status badges
 - **Role-Specific Dashboards:**
   - [x] Editor Workspace — standardized stat cards, assigned videos DataTable, mock upload zone
   - [x] Production Board (Senior Editor) — 5-column Kanban (Scripting→Published), drag cards, day counters
@@ -169,6 +169,15 @@
 - [x] CRM Page: responsive toolbars, hidden secondary actions on mobile
 - [x] Clients Page: built with mobile-first responsive toolbars
 - [x] `wireframes.md`: Section 11 documenting all responsive standards
+
+### Architecture Cleanup ✅ (Apr 27, 2026)
+- [x] Sidebar consolidation — Team, Billing, Integrations removed from Management nav; only Settings remains
+- [x] Route cleanup — `/owner/team`, `/owner/billing`, `/owner/integrations` now redirect to `/owner/settings?tab=`
+- [x] Settings page rebuilt — 4 tabs (App Branding, Team, Billing, Integrations) using embedded panel components
+- [x] Dead code deletion — old standalone `TeamDashboard.tsx`, `BillingDashboard.tsx`, `IntegrationsDashboard.tsx` removed
+- [x] V2 design token migration — `ProjectsDashboard`, `VideosDashboard`, `HQDashboard`, `StudioDashboard`, `ProductionBoard` purged of all legacy `surface-*`/`brand-*`/`bg-white` classes
+- [x] Full dark mode parity verified across all Owner pages
+- [x] TypeScript `tsc --noEmit` — zero errors
 
 ### Repository
 - **Repo:** `M-ADIB/clipsos-hub`
