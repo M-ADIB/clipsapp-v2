@@ -195,7 +195,13 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 | Owner CRM | `/owner/crm` | ✅ Sort + Filter + Search | ✅ Full toolbar | Gold standard — all pages should match |
 | Owner Clients | `/owner/clients` | ✅ Sort + Filter + Search | ✅ Full toolbar | Standardized — matches CRM pattern |
 | Client My Videos | `/client/videos` | ✅ Add + Filter + Sort | ✅ Partial | Has action bar, needs list selector |
-| Client Workspace | `/owner/clients/$id` | Per-tab | Per-tab | 4 tabs built (Overview, Production, Journey, Sales) |
+| Client Dashboard | `/client` | N/A (dashboard) | N/A | Stat cards + recent videos + upcoming events |
+| Client Workspace | `/owner/clients/$id` | Per-tab | Per-tab | 8 tabs: Overview, Production, Content, Journey, Sales, Analytics, Activity, Settings |
+| Editor Workspace | `/editor` | N/A (task list) | N/A | Standardized stat cards, assigned videos DataTable, mock upload zone |
+| Production Board | `/senior-editor` | N/A (kanban) | N/A | 5-column Kanban (Scripting→Published), drag cards, day counters |
+| Content Creator | `/content-creator` | N/A (dashboard) | N/A | Weekly calendar strip, standardized stat cards, drafts queue DataTable |
+| Closer Dashboard | `/closer` | N/A (dashboard) | N/A | Standardized stat cards, leads DataTable, follow-up queue TaskCards |
+| Owner Settings | `/owner/settings` | N/A | N/A | 4 tabs: App Branding, Team, Billing, Integrations |
 
 ### 🔲 Unbuilt Pages (use same patterns above)
 
@@ -214,10 +220,6 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 | Manager Team | `/manager/team` | Table (full toolbar) |
 | Manager Videos | `/manager/videos` | Table (full toolbar) |
 | Manager Schedule | `/manager/schedule` | Calendar |
-| Production Board | `/senior-editor` | Kanban |
-| Editor Workspace | `/editor` | Task list |
-| Content Creator | `/content-creator` | Dashboard |
-| Closer Dashboard | `/closer` | Dashboard + Pipeline |
 | Moderator Inbox | `/moderator` | Feed list |
 
 ---

@@ -5,7 +5,7 @@
 ## Platform: Lovable Cloud
 
 ### Deployment
-- **Repo:** `clipsos-frontend` (local) / Lovable Cloud
+- **Repo:** `M-ADIB/clipsos-hub` / Lovable Cloud
 - **Supabase:** Backend managed via Lovable — AI agents do NOT have MCP/SQL access
 - **Key rule:** All database work (migrations, RLS, edge functions) is handled by the user through Lovable's interface. Agents focus on frontend code only.
 

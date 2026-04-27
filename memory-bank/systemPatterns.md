@@ -1,5 +1,13 @@
 # ClipsOS V2 — System Patterns
 
+## Codebase Location
+
+- **Local path:** `/Users/madibbaroudi/Desktop/Dashboards/New Clips App`
+- **Repo:** `M-ADIB/clipsos-hub`
+- **Supabase:** Lovable Cloud (no agent MCP access)
+
+> ⚠️ Old Supabase `toyekrhhzqmltstrycdv` is deprecated. Backend is now Lovable Cloud.
+
 ## Database Conventions
 
 ### Table Structure
@@ -68,108 +76,92 @@ CREATE POLICY "Managers can manage {table}" ON public.{table}
 - Triggers: `set_{column}` or descriptive (`log_video_status_change`)
 - Functions: `snake_case`, verb-first (`get_user_role`, `seed_tenant_defaults`)
 
-## Frontend Patterns (Established)
+## Frontend Patterns
 
-### Navigation Architecture (CRITICAL — read before building any page)
+### Tech Stack
+- **React 19** + **Vite** + **TypeScript** (strict)
+- **Tailwind CSS 4** (`@theme inline`) + `tailwindcss-animate`
+- **shadcn/ui** (Radix UI primitives) — components in `src/components/ui/`
+- **TanStack Router v1** (file-based routing)
+- **TanStack Query** for server state
+- **Framer Motion** + **GSAP** for animations
+- **date-fns** for date formatting
+- **Recharts** for charts
+- **Sonner** for toast notifications
 
-**Universal Header Bar (TopNav):**
-- ONE bar, always visible, never hides or swaps
-- Structure: `[Title + optional Tabs] .............. [Ask Clips | ☀️ | 🔔]`
-- Left side: driven by `WorkspaceContext` — pages call `setHeaderConfig()` to set title + tabs
-- Right side: always the same three actions (Ask Clips, theme toggle, notifications)
-- No role badges in the header
+### Navigation Architecture
+
+**TopNav Bar:**
+- Universal header bar — title + optional tabs
+- Pages configure the header via `WorkspaceContext` → `setHeaderConfig()`
+- Right side: Ask Clips ✨ + theme toggle + notifications
 
 **How pages configure the header:**
 ```tsx
-// Any page can configure the universal header via context:
-const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
+import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 
-useEffect(() => {
-  setHeaderConfig({
-    title: "Ajmal Perfumes",
-    tabs: TABS.map((t) => ({ key: t, label: t })),
-    activeTab: "Overview",
-  });
-  return () => clearHeaderConfig();
-}, []);
+export default function MyPage() {
+  const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
+
+  useEffect(() => {
+    setHeaderConfig({
+      title: "Page Title",
+      tabs: [{ key: "tab1", label: "Tab 1" }],
+      activeTab: "tab1",
+    });
+    return () => clearHeaderConfig();
+  }, []);
+}
 ```
-
-**Default behavior (no context set):**
-- Title auto-generated from URL path segments
 
 **Sidebar:**
-- Collapse/expand toggle is INSIDE the sidebar (next to `//ClipsApp` logo)
-- Role-aware sections from `nav-config.ts`
-- User profile card at bottom
+- `src/components/app-shell/AppSidebar.tsx` — main sidebar component
+- Role-aware nav sections from `nav-config.ts`
+- Collapse/expand support
+- User profile at bottom
 
-**No duplicate headings rule:**
-- The header bar shows the current page name → pages do NOT render their own `<h1>` title
-- Section headings within page content (e.g. "Recent Activity", "Payment History") are fine
+### Auth System
+- **Location:** `src/contexts/AuthContext.tsx` — `AuthProvider` + `useAuth()` hook
+- **Role field:** from `user_roles` table
+- **Roles:** `owner`, `admin`, `editor_admin`, `content_admin`, `editor`, `sales`, `client`
+- **Role-based routing:** `/{role}/` pattern
+- **Sign-in flow:** email+password → fetch role → redirect to role dashboard
 
-### Design System
-- **CSS tokens:** OKLCH-based, defined in `src/styles.css` via `@theme inline` (Tailwind 4.0)
-- **Zero hardcoded hex:** All components use CSS variables (`--background`, `--primary`, etc.)
-- **Dark mode only** for V1 — no light mode toggle
-- **Fonts:** Arial for body text, Neue Haas Grotesk Display Pro for headings only
-
-### Component Architecture (19 primitives in `src/components/dashboard/`)
-| Component | Category | Usage |
-|-----------|----------|-------|
-| `StatCard` | Metric | Standard metric display with big number, badge, and unified percent progress bar |
-| `SparklineBar` | Viz | Gradient opacity bar chart |
-| `PipelineStepCard` | Metric | Wrapper around StatCard for pipeline stages |
-| `TaskCard` | Action | Standard component for actionable items and follow-up queues |
-| `ProjectCard` | Entity | Avatar stack + progress bar |
-| `NotificationRow` | Feed | Icon box + title + actions |
-| `ActivityRow` | Feed | Icon + text + amount |
-| `DashboardPanel` | Layout | Scrollable panel with mesh blur |
-| `FilterPills` | Control | Active/inactive pill toggles |
-| `SectionLabel` | Nav | Eyebrow header + chevron |
-| `JourneyEventCard` | Timeline | Date block + event details |
-| `GrowthChart` | Viz | Bar chart with glow effects |
-| `NoteCard` | Content | Obsidian-style note card |
-| `ProgressRow` | Viz | Labeled progress bar |
-| `DataTable` | Data | Sortable/filterable table |
-| `StatusBadge` | Status | Dot + colored label (5 variants) |
-
-### App Shell Architecture
-```
-AppShell
-├── WorkspaceProvider (context for header config)
-├── SidebarProvider (shadcn collapse/expand)
-├── AppSidebar (nav + user card + SidebarTrigger)
-└── Main container
-    ├── TopNav (universal header, reads WorkspaceContext)
-    └── <main> (page content via TanStack Router outlet)
-```
-
-### Key Files
+### Key File Paths
 | File | Purpose |
 |------|---------|
-| `src/components/app-shell/AppShell.tsx` | Layout wrapper, never conditional |
-| `src/components/app-shell/TopNav.tsx` | Universal header bar |
-| `src/components/app-shell/AppSidebar.tsx` | Sidebar with role-aware nav |
-| `src/components/app-shell/nav-config.ts` | Nav sections per role |
+| `src/routes/__root.tsx` | TanStack Router root layout |
+| `src/contexts/AuthContext.tsx` | Auth provider + useAuth hook |
 | `src/contexts/WorkspaceContext.tsx` | Header config context |
-| `src/contexts/AuthContext.tsx` | Auth + role management |
+| `src/components/app-shell/AppShell.tsx` | Layout wrapper |
+| `src/components/app-shell/TopNav.tsx` | Universal top nav bar |
+| `src/components/app-shell/AppSidebar.tsx` | Main sidebar |
+| `src/components/app-shell/nav-config.ts` | Nav sections per role |
+| `src/components/dashboard/` | Dashboard widget components |
+| `src/components/ui/` | shadcn/ui primitives |
+| `src/styles.css` | OKLCH tokens + Tailwind 4 @theme |
 
 ### State Management
-- Supabase client via React context
-- TanStack Query for server state
-- Zustand for UI-only state (sidebar collapsed, active filters)
-- `AuthContext` manages `realRole` + `activeRole` (DevTools override)
-- `WorkspaceContext` manages header bar configuration
+- **Supabase client** via `@/integrations/supabase/client`
+- **TanStack Query** for all server state (queries + mutations)
+- **React Context** for auth (`AuthProvider`), workspace, branding
+- **`AuthContext`** manages `realRole` + `activeRole` (DevTools override)
+- **`WorkspaceContext`** manages header bar configuration
+
+### Styling Approach
+- **Tailwind CSS 4** with `@theme inline` for design tokens
+- **OKLCH color system** — all tokens in `src/styles.css`
+- **shadcn/ui** components (Button, Dialog, Sheet, Tabs, etc.)
+- **Dark mode** via `.dark` class (`:root` = light, `.dark` = dark)
+- **CSS custom properties** — zero hardcoded hex in components
+- **class-variance-authority (CVA)** for component variants
+- **tailwind-merge** for class deduplication
 
 ### Backend Integrations (Edge Functions)
-- **Edge Functions** run in Deno environment (`supabase/functions/`)
-- Used for privileged actions requiring `SERVICE_ROLE_KEY` (e.g., `invite-user` using `auth.admin.inviteUserByEmail`)
-- Handle webhooks (e.g., Stripe) and outbound integrations (e.g., Resend emails)
-- Called from frontend via typed TanStack Query mutations (`useMutation`) to ensure loading/error states are tracked in UI
-
-### DevTools
-- `DevTools.tsx` panel for role-switching (all 9 roles)
-- Integrated into `__root.tsx`
-- Only visible in development mode
+- Edge Functions managed by Lovable Cloud
+- Located in `supabase/functions/`
+- Used for privileged actions requiring `SERVICE_ROLE_KEY`
+- Handle webhooks (Stripe) and outbound integrations (Resend emails)
 
 ### Routing Convention
 ```
@@ -179,20 +171,3 @@ AppShell
 /{role}/projects/:id        → project detail
 /{role}/videos/:id          → video review player
 ```
-
-## Migration Versioning
-Migrations use Supabase's `apply_migration` tool with descriptive names:
-```
-YYYYMMDDHHMMSS_descriptive_name
-```
-Example: `20260426113321_create_tenants_table`
-
-## Build Phases
-1. **Phase 0** ✅ — Foundation (tenants, profiles, user_roles, RLS helpers, modular lookups)
-2. **Phase 1** ✅ — Core Domain (clients/workspaces, projects, cycles, videos, versions, assignments)
-3. **Phase 2** ✅ — Communication (chat, comments, annotations, notifications)
-4. **Phase 3** ✅ — CRM (people, companies, deals, calls, follow-ups)
-5. **Phase 4** ✅ — Utility (saved views, custom columns, activity log)
-6. **Phase 5** ✅ — Finance (Stripe integration, expenses, transactions)
-7. **Phase 6** ✅ — Studio/AI/Email/Tasks
-8. **Frontend** 🔄 — Nav architecture done, dashboard pages in progress

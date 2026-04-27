@@ -2,7 +2,7 @@
 
 > Source of truth for frontend. Extracted from Figma CSS. Implementation: `src/styles.css`
 
-## §1 Colors (Dark Mode Only — V1)
+## §1 Colors (Dual Theme — Light + Dark)
 
 ### Backgrounds
 | Token | Hex | Usage |
@@ -113,15 +113,19 @@
 
 ### StatCard
 Card bg, title 12-14px, value 30-40px display, optional badge + sparkline + footer.
+**Progress bar is opt-in** — only renders when `percent` prop is explicitly provided and > 0. Summary metric cards (Calls Today, Pipeline Value, etc.) do NOT show bars.
 
 ### SparklineBar
 Gradient opacity bars. Colors: accent (lavender), success (yellow).
 
 ### PipelineStepCard
-Static metric — label, big 40px count, 4px progress bar. Colors per stage. **No animations.**
+Smart wrapper around StatCard — label, big 40px count. **"Total Videos" (percent=0) → no bar.** Status stages (percent > 0) → unified accent-colored bar. No per-stage color overrides.
 
 ### TaskCard
-Left border 5px `#D8B4FE`, title + status badge + description. Badge variants: complete/client/warning/danger.
+Left border 5px via `var(--primary-glow)` (platform accent). CSS-driven light/dark modes:
+- **Light mode**: transparent bg, `border: 1px solid rgba(0,0,0,0.1)`, accent left border
+- **Dark mode**: `surface-card` bg, no outline, accent left border
+Badge variants: complete/client/warning/danger. Styled via `.task-card` and `.task-card-badge` CSS classes in `styles.css`.
 
 ### ProjectCard
 Title, avatar stack (-8px overlap, 32px circles), gradient progress bar, status pill.

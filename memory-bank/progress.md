@@ -2,8 +2,7 @@
 
 ## Platform Migration ✅
 - [x] Migrated from `clipsos-hub` (Supabase `toyekrhhzqmltstrycdv`) to Lovable Cloud
-- [x] Old repo `M-ADIB/clipsos-hub` deprecated
-- [x] Active repo: `M-ADIB/clipsapp-v2` (`clipsos-frontend` local)
+- [x] Active repo: `M-ADIB/clipsos-hub`
 - [x] Supabase backend now managed via Lovable Cloud (no agent MCP access)
 
 ## Database: Managed by User via Lovable ⚠️
@@ -88,6 +87,6 @@
 - [ ] Email Hub module
 
 ### Repository
-- **Repo:** `M-ADIB/clipsapp-v2`
-- **Local path:** `/Users/madibbaroudi/Desktop/Dashboards/New Clips App/clipsos-frontend`
-- **Branch:** `feat/round4-frontend`
+- **Repo:** `M-ADIB/clipsos-hub`
+- **Local path:** `/Users/madibbaroudi/Desktop/Dashboards/New Clips App`
+- **Branch:** `main`
