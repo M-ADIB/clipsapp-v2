@@ -11,21 +11,20 @@ ClipsOS is a **white-label, multi-tenant operating system for short-form content
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19 + Vite + Tailwind CSS 4 (`@theme inline`) + shadcn/ui (Radix) |
-| Backend | Supabase via Lovable Cloud (PostgreSQL, Edge Functions, Auth, Storage) |
+| Backend | Supabase (Project `toyekrhhzqmltstrycdv`) — PostgreSQL, Edge Functions, Auth, Storage |
 | Video Playback | Cloudflare Stream (HLS) |
 | Video Storage | Cloudflare R2 (original quality) |
 | Payments | Stripe |
 | Email | Resend |
-| Hosting | Lovable (auto-deploy from GitHub) |
+| Rich Text | TipTap (ProseMirror) |
 | Routing | TanStack Router v1 (file-based) |
 | State | TanStack Query + React Context |
 
-## Supabase Project (Lovable Cloud)
+## Supabase Project
 
-- **Managed by:** Lovable Cloud
-- **Old project:** `toyekrhhzqmltstrycdv` — DEPRECATED, no longer in use
-
-> ⚠️ AI agents do NOT have MCP/SQL access. All database work is done by the user through Lovable.
+- **Project ID:** `toyekrhhzqmltstrycdv` (ClipsApp)
+- **Region:** ap-southeast-1
+- **Access:** Agents have **full MCP/SQL access** — can execute SQL, create migrations, deploy edge functions, and manage storage.
 
 ## GitHub Repository
 
@@ -40,7 +39,7 @@ Every business table MUST have a `tenant_id` column referencing `tenants.id`. RL
 
 ### 2. Role-Based Access Control
 ```
-owner → admin → editor_admin → content_admin → editor / sales → client
+owner → manager → senior_editor → content_creator → editor / closer → client
 ```
 Roles are stored in `user_roles` table. The auth system (`@/contexts/AuthContext.tsx`) fetches the highest-priority role on sign-in and routes accordingly.
 
@@ -65,27 +64,27 @@ Tenant (Agency)
         ├── Chat Room
         ├── Files
         └── Onboarding Journey
+  └── Content Studio
+        ├── Foundation (17 onboarding Qs + context dumps)
+        ├── Pillars (freeform rich-text strategy)
+        ├── Audience (avatar personas)
+        ├── Cycles → Scripts (TipTap JSON bodies)
+        └── Client Brain (AI knowledge base)
   └── CRM
         ├── People
         ├── Companies
         ├── Deals → Stages (modular pipeline)
         ├── Calls
         └── Follow-Ups
-  └── Studio
-        ├── Scripts / Hooks
-        └── Content Vault
+  └── Forms
+        ├── Form Builder (drag-and-drop fields)
+        ├── Submissions (public + authenticated)
+        └── CRM Integration (auto-create people)
   └── Finance (Owner-only)
         ├── Revenue (Stripe)
         ├── Expenses
         └── Payroll
 ```
-
-## Workspace Types
-
-| Type | Description |
-|------|-------------|
-| `individual` | Single client login |
-| `company` | Primary login + N sub-members; each sees only their own content stream |
 
 ## Key Rules for All Agents
 

@@ -60,6 +60,9 @@ Every page that shows a collection of items MUST include:
 - Title icon: 24×24, rounded bg `primary/20`, icon color `primary`
 - Title text: 14px Inter 600, white
 - Primary CTA: rounded-full, bg `primary`, 12px font-semibold, padding `6px 14px`
+- **⛔ IMPORTANT:** This header row is rendered by the `TopNav` component via `setHeaderConfig()`. 
+  Do NOT render this as inline `<h1>` or `<div>` inside page components — that creates duplicates.
+  See `systemPatterns.md` → "Header Ownership Rules" for the correct pattern.
 
 #### Row 2: Toolbar Bar (44px)
 ```
@@ -190,36 +193,39 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 
 | Page | Route | Has Filter/Sort? | Has Toolbar? | Notes |
 |------|-------|-------------------|--------------|-------|
-| Owner Dashboard | `/owner` | N/A (dashboard) | N/A | 2 tabs: Sales Overview, Production Overview |
-| Manager Dashboard | `/manager` | N/A (dashboard) | N/A | Single view = Production Overview |
+| Owner Dashboard | `/owner` | N/A (dashboard) | N/A | 3 tabs: Sales, Production, Finance Overview — **AED currency** |
+| Owner Finance | `/owner/finance` | ✅ Filter + Search | ✅ Actions | 4 tabs: Overview, Revenue Breakdown, Subscriptions, Costs |
 | Owner CRM | `/owner/crm` | ✅ Sort + Filter + Search | ✅ Full toolbar | Gold standard — all pages should match |
 | Owner Clients | `/owner/clients` | ✅ Sort + Filter + Search | ✅ Full toolbar | Standardized — matches CRM pattern |
-| Client My Videos | `/client/videos` | ✅ Add + Filter + Sort | ✅ Partial | Has action bar, needs list selector |
-| Client Dashboard | `/client` | N/A (dashboard) | N/A | Stat cards + recent videos + upcoming events |
+| Owner Sales Hub | `/owner/sales` | ✅ | ✅ | Leads, Pipeline, Schedule tabs |
+| Owner Content Studio | `/owner/studio` | Per-tab | Per-tab | Two-state: clients table → client detail (Foundation/Pillars/Audience/Scripts) |
+| Owner Email Hub | `/owner/email-hub` | N/A | Per-tab | 5 tabs: Templates, Editor, Compose, History, Scheduled |
+| Owner Forms | `/owner/forms` | N/A | ✅ | Form list, builder, submissions, public renderer |
+| Owner Projects | `/owner/projects` | ✅ | ✅ | Project list + Project Builder wizard |
+| Owner Settings | `/owner/settings` | N/A | N/A | 4 tabs: App Branding, Team, Billing, Integrations |
+| Manager Dashboard | `/manager` | N/A (dashboard) | N/A | Single view = Production Overview |
+| Client Dashboard | `/client` | N/A (dashboard) | N/A | Stat cards + recent videos + upcoming events — **mobile-responsive** |
+| Client My Videos | `/client/videos` | ✅ Add + Filter + Sort | ✅ Partial | Table/Reels/Grid views |
+| Client Posting Queue | `/client/queue` | N/A | N/A | Calendar + List views — **mobile-responsive** |
+| Client Files | `/client/files` | N/A | N/A | File list with download — **mobile-responsive** |
 | Client Workspace | `/owner/clients/$id` | Per-tab | Per-tab | 8 tabs: Overview, Production, Content, Journey, Sales, Analytics, Activity, Settings |
 | Editor Workspace | `/editor` | N/A (task list) | N/A | Standardized stat cards, assigned videos DataTable, mock upload zone |
 | Production Board | `/senior-editor` | N/A (kanban) | N/A | 5-column Kanban (Scripting→Published), drag cards, day counters |
-| Content Creator | `/content-creator` | N/A (dashboard) | N/A | Weekly calendar strip, standardized stat cards, drafts queue DataTable |
+| Content Creator | `/content-creator` | N/A (kanban) | N/A | Weekly calendar strip, Kanban Production Board (1:1 architectural mirror of Senior Editor board, customized for CC captions/hooks/freebies) |
 | Closer Dashboard | `/closer` | N/A (dashboard) | N/A | Standardized stat cards, leads DataTable, follow-up queue TaskCards |
-| Owner Settings | `/owner/settings` | N/A | N/A | 4 tabs: App Branding, Team, Billing, Integrations |
 
 ### 🔲 Unbuilt Pages (use same patterns above)
 
 | Page | Route | Expected Type |
 |------|-------|---------------|
 | Owner HQ | `/owner/hq` | Dashboard |
-| Owner Projects | `/owner/projects` | Table (full toolbar) |
-| Owner Videos | `/owner/videos` | Table (full toolbar) |
-| Owner Content Studio | `/owner/studio` | Workspace |
-| Owner Pipeline | `/owner/pipeline` | Kanban / Table |
-| Owner People | `/owner/people` | Table (full toolbar) |
-| Owner Deals | `/owner/deals` | Table (full toolbar) |
 | Owner Calls | `/owner/calls` | Table / Calendar |
 | Owner Tasks | `/owner/tasks` | Table (full toolbar) |
 | Manager Clients | `/manager/clients` | Table (full toolbar) |
 | Manager Team | `/manager/team` | Table (full toolbar) |
 | Manager Videos | `/manager/videos` | Table (full toolbar) |
 | Manager Schedule | `/manager/schedule` | Calendar |
+| Guest Viewer | `/r/:token` | Public review page |
 | Moderator Inbox | `/moderator` | Feed list |
 
 ---
@@ -230,8 +236,9 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 | Section | Items |
 |---------|-------|
 | Main | Dashboard, My Tasks, CRM |
-| Production | HQ, Clients, Projects, Videos, Content Studio |
-| Sales | Pipeline, People, Deals, Calls |
+| Production | HQ, Clients, Projects, Videos, Content Studio, Forms |
+| Sales & Finance | Sales, Finance |
+| Communication | Team Chat, Client Chats, Email Hub |
 
 ### Manager
 | Section | Items |
@@ -243,7 +250,7 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 | Section | Items |
 |---------|-------|
 | Main | Home, My Videos, Posting Queue, Chat, My Files |
-| Support | Feedback, Settings, Help Center |
+| (no Support section — settings via profile menu) |
 
 ### Senior Editor
 | Section | Items |
@@ -372,3 +379,67 @@ Used across ALL pages. `StatusBadge` component: dot (6×6) + label (12px Inter).
 | Stat value (large) | 28px | 40px |
 | Stat value (medium) | 20px | 30px |
 | Video review title | 16px | 22px |
+
+---
+
+## 12. Mobile Navigation Architecture
+
+> On mobile (< md breakpoint), the sidebar is fully replaced by a **bottom tab bar** + **"More" drawer**. Pages with header tabs render a dedicated **sub-tab pill bar** below the TopNav instead of cramped inline tabs.
+
+### 12.1 Mobile Bottom Tab Bar (`MobileBottomNav`)
+
+| Spec | Value |
+|------|-------|
+| Position | Fixed, `inset-x-0 bottom-0`, `z-50` |
+| Height | 56px + `env(safe-area-inset-bottom)` padding |
+| Background | `bg-background/95` + `backdrop-blur-md` |
+| Border | Top border `border-border` |
+| Visibility | `md:hidden` — only mobile |
+| Tab count | 4–5 per role (see mapping below) |
+| Icon size | `h-5 w-5` (20×20) |
+| Label font | `text-[10px] font-medium` |
+| Active state | `text-primary` |
+| Inactive state | `text-foreground-disabled` |
+
+#### Per-Role Bottom Tab Mapping
+
+| Role | Tab 1 | Tab 2 | Tab 3 | Tab 4 | Tab 5 |
+|------|-------|-------|-------|-------|-------|
+| **Owner** | Dashboard | Clients | Videos | Chat | More |
+| **Manager** | Dashboard | Clients | Videos | Chat | More |
+| **Senior Editor** | Board | Videos | Clients | Chat | More |
+| **Content Creator** | Dashboard | Videos | Clients | Chat | — |
+| **Editor** | Tasks | Videos | Chat | — | — |
+| **Closer** | Dashboard | Pipeline | Calls | Chat | — |
+| **Client** | Home | My Videos | Chat | Files | — |
+| **Moderator** | Queue | Chat | — | — | — |
+
+### 12.2 Mobile Sub-Tab Pill Bar (`MobileSubTabs`)
+
+Renders below TopNav **only when the page has header tabs**.
+
+| Spec | Value |
+|------|-------|
+| Position | `sticky top-[56px]` |
+| Height | 44px (`h-11`) |
+| Scroll | `overflow-x-auto`, `scrollbar-none` |
+| Pill (active) | `bg-primary text-background rounded-full` |
+| Pill (inactive) | `bg-surface-raised text-foreground-muted rounded-full` |
+| Visibility | `md:hidden` |
+
+### 12.3 "More" Drawer
+
+| Spec | Value |
+|------|-------|
+| Component | shadcn Sheet `side="bottom"` |
+| Max height | `max-h-[70vh]`, `rounded-t-2xl` |
+| Layout | 2-column grid grouped by sidebar section |
+
+### 12.4 Key Files
+
+| File | Purpose |
+|------|---------|
+| `mobile-nav-config.ts` | Per-role bottom tab + More drawer config |
+| `MobileBottomNav.tsx` | Universal bottom tab bar |
+| `MobileSubTabs.tsx` | Scrollable sub-tab pill bar |
+| `MobileMoreDrawer.tsx` | Bottom sheet More drawer |

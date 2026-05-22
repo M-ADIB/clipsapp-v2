@@ -114,6 +114,16 @@
 ### StatCard
 Card bg, title 12-14px, value 30-40px display, optional badge + sparkline + footer.
 **Progress bar is opt-in** — only renders when `percent` prop is explicitly provided and > 0. Summary metric cards (Calls Today, Pipeline Value, etc.) do NOT show bars.
+**`subtitle` prop** — optional small text below the big number (used for USD conversion hints in Finance).
+
+### FinanceKPICard (inline in FinanceOverviewTab)
+Premium card variant — rounded-xl with gradient top bar (3px), colored icon badge, uppercase eyebrow label.
+| Card | Gradient | Icon Color |
+|------|----------|------------|
+| Total Revenue | emerald-500→400 | emerald-400 |
+| This Month | blue-500→400 / red-500→400 | blue-400 / red-400 |
+| Avg Per Client | violet-500→400 | violet-400 |
+| Clients Billed | amber-500→400 | amber-400 |
 
 ### SparklineBar
 Gradient opacity bars. Colors: accent (lavender), success (yellow).
@@ -176,3 +186,42 @@ Success: `box-shadow: 0 0 15px rgba(232,255,191,0.3)`
 - Note card hover: `scale(1.01)`
 - Progress bars: `transition-all 500ms`
 - **Stat cards are STATIC** — no live animations
+
+## §7 Currency Display Standard
+
+> **AED is the primary display currency.** All monetary values across the platform display in UAE Dirhams (AED).
+
+### Constants
+| Name | Value | Location |
+|------|-------|----------|
+| `USD_TO_AED` | `3.6725` | `src/components/dashboards/owner/finance/finance-helpers.ts` |
+
+### Formatting Helpers
+| Helper | Input | Output |
+|--------|-------|--------|
+| `fmtCents(cents, currency?)` | AED cents (integer) | `AED 1,234.56` |
+| `fmtAmount(amount, currency?)` | AED value (float) | `AED 1,234.56` |
+| `usdHint(aedAmount)` | AED value | `≈ $336.16` |
+| `usdHintCents(aedCents)` | AED cents | `≈ $336.16` |
+
+### Display Rules
+- **KPI cards** — Big number in AED, small `subtitle` with USD hint
+- **Table rows** — AED primary, small gray USD hint in same cell
+- **CSV export** — Both `Amount (AED)` and `Amount (USD)` columns
+- **Stripe fee** — Displayed as `2.9% + AED 1.10` (not USD $0.30)
+- **Operating costs** — Stored and displayed in AED
+
+### Where USD Hints Appear
+1. Finance Overview KPI cards (via `subtitle` prop)
+2. Revenue Breakdown key rows (Gross, Net, Profit)
+3. Costs tab KPI cards
+4. Payment History table cells
+
+### Where USD Hints Do NOT Appear
+- Quick inline mentions of amounts
+- Chart axis labels (already labeled "(AED)")
+- Non-finance pages (CRM deals, etc.)
+
+## §8 Rich Text Extensions (TipTap)
+- StarterKit, TextAlign, Color, Highlight, TextStyle, FontFamily, Underline, Link, Placeholder
+- **FontSize** (`FontSizeExtension.ts`) — custom extension for inline font size control
