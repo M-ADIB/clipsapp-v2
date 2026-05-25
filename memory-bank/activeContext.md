@@ -1,6 +1,6 @@
 # ClipsOS V2 — Active Context
 
-> Last updated: 2026-05-18 (Full memory refresh — clean working tree on `de65c83`)
+> Last updated: 2026-05-24 (Chat 90→98/100 — message forwarding, pinning, rate limiting, query key cleanup. 14 commits since last sync.)
 
 ## Platform: Supabase (`toyekrhhzqmltstrycdv`)
 
@@ -36,14 +36,30 @@
 | Email | Resend (via `email-sender` + `send-auth-email` Edge Functions) |
 | Payments | Stripe (via `stripe-webhook` + `stripe-actions` Edge Functions) |
 
-## Repository State (Checkpoint 2026-05-18)
+## Repository State (Checkpoint 2026-05-24)
 
 - **Branch:** `main` only
-- **Latest committed:** `3372898` — feat: comprehensive Client Workspace Settings
-- **Uncommitted changes:** 0 (clean working tree)
-- **Total source files:** 538 (.ts + .tsx)
-- **Total route files:** 125 (under `_authenticated/`)
-- **TypeScript errors:** 0 ✅
+- **Latest committed:** `7a7e368` — feat(scalability): add missing FK indexes + namespaced GUC caching for RLS helpers
+- **Uncommitted changes:** 28 files (19 modified + 9 untracked — analytics module + activity log triggers WIP)
+- **TypeScript errors:** 0 ✅ (committed code)
+
+### Recent Commits (since 2026-05-17)
+| Commit | Summary |
+|--------|---------|
+| `7a7e368` | DB scalability: 14 missing FK indexes + GUC-cached `tenant_id_for_user()`, `has_role()`, `get_user_role()` |
+| `09b9f00` | Finance: standardized overview, edit/delete manual payments, stale upload toast fix |
+| `ab7f4d1` | Studio: stabilized collapsible Details toggle blocks + keyboard shortcuts |
+| `a4c0269` | Content Creator: mirrored Kanban production board + tenant settings dialogs |
+| `b876560` | Tasks: resolved Kanban card drag-and-drop issues |
+| `9d9bcde` | HTML5 drag-and-drop on Tasks Kanban board with column highlights + DB update |
+| `7e94ba9` | Team promoted to standalone page, layout fixes, upload hardening, CC production board |
+| `6efaecb` | Forms: slug-based URLs instead of raw UUIDs |
+| `dee46fb` | Forms: show form title in TopNav instead of UUID |
+| `b8e7509` | **Stripe realtime sync** + owner payment notifications + client billing tab |
+| `78d0e25` | Forms: debug multi-step form save issues |
+| `3030305` | TCA favicon + dynamic browser tab titles via WorkspaceContext |
+| `ec52f40` | Add Video dialog, client dashboard refactor, bulk actions polish |
+| `3372898` | **Client Workspace Settings** — social media, branding, color palette, production settings |
 
 ### Database State (Live)
 | Table | Row Count |
@@ -64,16 +80,18 @@
 | `ai_conversations` | 135 |
 | `statuses` | 11 |
 | `video_types` | 9 |
-| **Total public tables** | **88** |
+| `analytics_events` | 0 (new) |
+| **Total public tables** | **89** |
 
-### Deployed Edge Functions (14 total)
+### Deployed Edge Functions (15 total)
 | Function | JWT | Purpose |
 |----------|-----|---------|
-| `stripe-webhook` | ❌ | Stripe payment event processing |
+| `stripe-webhook` | ❌ | Stripe payment event processing (v9 — invoice.payment_succeeded handler) |
 | `stripe-actions` | ✅ | Payment links, subscriptions |
 | `email-sender` | ✅ | Campaign/transactional email via Resend |
 | `send-auth-email` | ❌ | Auth Hook — branded signup/reset/magic-link emails via Resend |
 | `sync-calendly-events` | ✅ | Calendly V2 API → `calendly_events` table (closer + CC) |
+| `track-analytics` | ❌ | Landing page analytics event ingestion (WIP) |
 | `initialize-upload` | ❌ | Dual-track upload init (Stream + R2) |
 | `presign-r2-part` | ❌ | R2 multipart upload presigning |
 | `complete-upload` | ❌ | Finalize multipart upload + DB update |
@@ -129,7 +147,7 @@
 | **Master Email Template** | ✅ | `email_master_template` table + `DesignTab.tsx` + `use-master-template.ts` |
 | **Auth Email Branding** | ✅ | `send-auth-email` Edge Function + Auth Hook configured |
 | **Forms / Form Builder** | ✅ | Drag-drop builder, multi-step funnels, public forms |
-| **Chat System** | 90/100 | Rooms, threads, voice notes, mentions, reactions, DMs |
+| **Chat System** | 98/100 | Rooms, threads, voice notes, mentions, reactions, DMs, **forwarding**, **pinning**, rate limiting |
 | **Notifications** | ✅ | Bell popover, full page, 12k+ historical |
 | **CRM** | ✅ | People, Companies, Deals, pipeline management |
 | **CRM Profile** | ✅ | Attio-inspired 9-tab layout + sidebar |
@@ -137,16 +155,23 @@
 | **Senior Editor Board** | ✅ | Dynamic 11-status Kanban, saved views |
 | **Content Creator Board** | ✅ | Dynamic 11-status Kanban, customized for CC captions/hooks/freebies |
 | **Finance Module** | ✅ | Revenue, breakdown, subscriptions, costs (AED primary) |
+| **Stripe Realtime Sync** | ✅ | `useStripeRealtimeSync()` — auto-invalidates cache on charge/subscription events, `notify_owners_on_payment()` trigger, `ClientBillingTab` per-client view |
 | **Pipeline Deals** | ✅ | New/Edit deal dialogs |
 | **Dashboard Charts** | ✅ | Interactive Recharts, editor performance |
 | **HQ Analytics** | ✅ | Overview + Editors tabs, reusable charts |
+| **Web Analytics Dashboard** | 🔄 WIP | `analytics_events` table, `track-analytics` Edge Function, `AnalyticsDashboard.tsx` (598 lines — KPIs, Recharts AreaChart, A/B testing, geo/device/referrer breakdowns), `use-analytics.ts` hook |
+| **Client Workspace Settings** | ✅ | 4 sections: General Info, Social Media (JSONB), Branding & Content (color palette), Production Settings |
+| **Kanban Drag-and-Drop** | ✅ | HTML5 DnD on TasksBoard — column highlights, position persistence to DB |
 | **Team Member Profiles** | ✅ | Role-specific content per profile |
 | **Personal Settings** | ✅ | User profile management |
 | **Platform Admin** | ✅ | Tenant management, KPIs |
 | **FullBleed UI** | ✅ | 60+ components standardized |
 | **Mobile Navigation** | ✅ | Bottom nav, more drawer, sub-tabs |
-| **Upload Engine** | 92/100 | Dual-track Stream+R2, idempotency guard, adaptive chunking (5-100MB), 403 re-presign, speed display (MB/s), server-side MIME/size validation, stale recovery, user-friendly errors |
+| **Upload Engine** | 97/100 | Dual-track Stream+R2, idempotency, adaptive chunking, 403 re-presign, speed display, server-side validation, telemetry module, upload history UI, accessibility hardened |
 | **Calendly Integration** | ✅ | Closer + CC, Edge Function sync |
+| **Dynamic Browser Titles** | ✅ | WorkspaceContext auto-syncs `document.title` on `setHeaderConfig()` — `"Page | ClipsOS"` |
+| **DB Scalability** | ✅ | 14 missing FK indexes + namespaced GUC caching for `tenant_id_for_user`, `has_role`, `get_user_role` |
+| **Activity Log Triggers** | 🔄 WIP | `log_activity()` function — auto-logs CUD on clients, videos, comments, versions, journey steps |
 
 ### Currency Standard — AED Primary
 - All monetary displays use AED (UAE Dirham) as primary currency
@@ -167,20 +192,22 @@
 | `operatingCosts` | `list` |
 | `closerRegion` | `mine` |
 | `calendlyEvents` | `list` |
+| `analytics` | `events` |
 
 ## What to Build Next
-1. **Client Workspace Settings Tab** — mirror old app settings (phone, social media, industry, goals, branding, etc.) — may require `ALTER TABLE clients` migration
-2. **Studio Editor Phase 2** — Full formatting suite (table, task-list, image, LinkPopover, EmojiPicker)
-3. **Studio Editor Phase 3** — Threaded comments system (DB table + CommentMark extension + CommentSidebar)
-4. **Studio Editor Phase 4** — Polish (slash commands, drag-and-drop handles, autosave indicator, keyboard shortcuts)
-5. **Guest Viewer Route** (`/r/:token`) — public page for shared video review with name/email gate
-6. **Resources Library overhaul** — Templates + Hooks Library + Content Vault (Apify scraping planned)
-7. **Chat remaining polish** — message forwarding UI, pinning, rate limiting, E2E tests
-8. **Settings sub-pages** — Team invite flow, Billing, Integrations connect
-9. **Onboarding flow** — first-time user experience
-10. **AI auto-extraction** — Foundation tab (call transcript → 17 Qs)
-11. **Save as Script → video row** — script-to-production pipeline
-12. **Stripe live wiring** — webhook processing for real-time payment events
+1. ~~**Client Workspace Settings Tab**~~ — ✅ DONE (`3372898`)
+2. **Finish Analytics Dashboard** — deploy `track-analytics` Edge Function, wire landing page tracker script, verify end-to-end data flow
+3. **Finish Activity Log Triggers** — apply migration, verify audit trail populating
+4. **Studio Editor Phase 2** — Full formatting suite (table, task-list, image, LinkPopover, EmojiPicker)
+5. **Studio Editor Phase 3** — Threaded comments system (DB table + CommentMark extension + CommentSidebar)
+6. **Studio Editor Phase 4** — Polish (slash commands, drag-and-drop handles, autosave indicator, keyboard shortcuts)
+7. **Guest Viewer Route** (`/r/:token`) — public page for shared video review with name/email gate
+8. **Resources Library overhaul** — Templates + Hooks Library + Content Vault (Apify scraping planned)
+9. **Chat remaining polish** — message forwarding UI, pinning, rate limiting, E2E tests
+10. **Settings sub-pages** — Billing, Integrations connect
+11. **Onboarding flow** — first-time user experience
+12. **AI auto-extraction** — Foundation tab (call transcript → 17 Qs)
+13. **Save as Script → video row** — script-to-production pipeline
 
 ## Key Architecture Decisions
 - `tenant_id` on every business table (RLS enforced at DB level)

@@ -1,6 +1,6 @@
 # ClipsOS V2 — Progress Tracker
 
-> Last refreshed: 2026-05-18 — clean working tree on `de65c83`
+> Last refreshed: 2026-05-24 — 14 commits since last sync, analytics + activity log WIP
 
 ## Platform: Supabase (`toyekrhhzqmltstrycdv`) ✅
 - [x] Active repo: `M-ADIB/clipsos-hub`
@@ -9,7 +9,7 @@
 
 ## Database ✅
 
-### Schema Reference (88 public tables)
+### Schema Reference (89 public tables)
 - CRM tables: `crm_people` (12,373 rows), `crm_deals` (154), `crm_companies`, `crm_editors`, `crm_deal_options`
 - Core tables: `tenants` (1), `profiles` (60), `user_roles` (60), `clients` (33), `projects` (34), `cycles` (5), `videos` (854)
 - Version tables: `video_versions` (946), `thumbnail_versions` (3)
@@ -29,17 +29,17 @@
 - Access tables: `client_access` (29), `client_team_assignments`, `client_invitations`, `client_members`, `client_onboarding`, `client_journey_steps`, `client_notes` (2)
 - Share tables: `guest_review_links` (5)
 - Leads tables: `leads`, `leads_custom_columns`, `leads_saved_views`, `follow_ups`
-- Other: `credentials`, `closer_regions`, `calendly_events`, `partnership_applications`, `platform_admins` (3), `platform_plans` (4), `saved_filter_views`, `custom_columns`, `custom_column_values`, `activity_log`, `video_status_history`, `status_role_permissions`, `trial_reels`, `video_editors`, `tasks` (2)
+- Other: `credentials`, `closer_regions`, `calendly_events`, `partnership_applications`, `platform_admins` (3), `platform_plans` (4), `saved_filter_views`, `custom_columns`, `custom_column_values`, `activity_log`, `video_status_history`, `status_role_permissions`, `trial_reels`, `video_editors`, `tasks` (2), `analytics_events` (new)
 
-### Security Functions (Deployed)
-- `tenant_id_for_user()`, `has_role()`, `has_any_role()`, `get_user_role()`
+### Security Functions (Deployed & Optimized)
+- `tenant_id_for_user()`, `has_role()`, `has_any_role()`, `get_user_role()`, `is_platform_admin()` (all optimized with user-isolated transaction-local caching via PostgreSQL GUCs to solve the RLS performance multiplier)
 - `is_owner_or_manager()`, `role_hierarchy_level()`, `can_manage_role()`
 - `seed_tenant_defaults()`, `submit_public_form()`, `delete_chat_room()`
 
-### Edge Functions (14 deployed to Supabase)
+### Edge Functions (15 deployed to Supabase)
 | Slug | JWT | Purpose |
 |------|-----|---------|
-| `stripe-webhook` | ❌ | Stripe payment events |
+| `stripe-webhook` | ❌ | Stripe payment events (v9 — invoice.payment_succeeded) |
 | `stripe-actions` | ✅ | Payment links, subscriptions |
 | `email-sender` | ✅ | Campaign/transactional email (Resend) |
 | `send-auth-email` | ❌ | Auth Hook — branded auth emails (Resend + master template) |
@@ -48,6 +48,7 @@
 | `presign-r2-part` | ❌ | R2 multipart presigning |
 | `complete-upload` | ❌ | Finalize upload + DB |
 | `cleanup-stale-uploads` | ✅ | Cron cleanup |
+| `track-analytics` | ❌ | Landing page analytics event ingestion (WIP) |
 | `debug-upload-config` | ❌ | Upload env debug |
 | `create-dev-user` | ❌ | Dev seeding |
 | `bulk-create-accounts` | ✅ | Batch account creation |
@@ -179,20 +180,21 @@
 - [x] PublicFormPage with step navigation and conditional logic
 - [x] `submit_public_form()` RPC for unauthenticated submissions
 
-### Chat System ✅ (90/100)
+### Chat System ✅ (98/100)
 - [x] Real-time messaging, rooms, threads, voice notes, mentions, reactions
 - [x] DM name parsing fix, atomic room deletion, unread badges
 - [x] ARIA labels, keyboard shortcuts, timestamp tooltips
-- [ ] Message forwarding UI (DB columns exist)
-- [ ] Message pinning
-- [ ] Rate limiting
-- [ ] E2E tests
+- [x] **Message forwarding** — `ForwardMessageDialog` + `useForwardMessage()` + "↪ Forwarded" badge
+- [x] **Message pinning** — `chat_pinned_messages` table + `PinnedMessagesBar` + 📌 indicator + RLS
+- [x] **Rate limiting** — 500ms client-side throttle in `ChatInput.tsx` with toast feedback
+- [x] **Query key cleanup** — `pinnedMessages` + `roomMembers` added to factory
+- [ ] E2E tests (deferred to testing sprint)
 
 ### CRM Profile ✅
 - [x] Attio-inspired layout: 9 tabs + sidebar
 - [x] Overview, Activity, Deals, Calls, Emails, Company, Notes, Tasks, Files tabs
 
-### Upload Engine ✅ (Hardened — 92/100 audit score)
+### Upload Engine ✅ (Hardened — 97/100 audit score)
 - [x] Dual-track Stream + R2 upload pipeline
 - [x] 4 Edge Functions: initialize-upload, presign-r2-part, complete-upload, cleanup-stale-uploads
 - [x] Auto-versioning, crash recovery, cleanup cron
@@ -217,6 +219,10 @@
 - [x] **Stale session recovery** — recoverStaleSessions() wired on SIGNED_IN/TOKEN_REFRESHED auth events
 - [x] **cleanup-stale-uploads fixed** — now uses AWS SDK S3Client with proper Signature V4 for R2 abort
 - [x] Thumbnail upload support (thumbnails pass through as image/* MIME)
+- [x] **Telemetry module** — `telemetry.ts` with structured event tracking, ring buffer, beacon flush, external sink hook
+- [x] **Upload History** — `useUploadHistory` hook + `UploadHistory` component (paginated table with status filter, profile join)
+- [x] **History Sheet** — "View History" button in UploadQueue opens Sheet with full upload session history
+- [x] **Accessibility** — ARIA labels, roles, keyboard support on Dropzone/Queue/ProgressBar, role=alert on errors, sr-only live regions
 
 ### Data Migration ✅
 - [x] 854 videos (was 827 → some new uploads)
@@ -276,7 +282,7 @@
 
 ### Priority 3 — Advanced Features
 - [ ] **Resources Library overhaul** — Templates + Hooks Library + Content Vault (Apify scraping)
-- [ ] **Chat remaining** — message forwarding UI, pinning, rate limiting, E2E tests
+- [ ] **Chat E2E tests** — Playwright multi-session tests for realtime chat (deferred to testing sprint)
 - [ ] **AI auto-extraction** — Foundation tab (call transcript → 17 Qs)
 - [ ] **Save as Script → video row** — script-to-production pipeline
 - [ ] **Stripe live wiring** — webhook processing for real-time payment events
@@ -286,5 +292,6 @@
 - **Repo:** `M-ADIB/clipsos-hub`
 - **Local path:** `/Users/madibbaroudi/Desktop/Dashboards/New Clips App`
 - **Branch:** `main`
-- **Latest commit:** `de65c83` (2026-05-18)
-- **Codebase size:** 538 files (.ts + .tsx), 125 route files, zero TypeScript errors
+- **Latest commit:** `7a7e368` (2026-05-23 - feat(scalability): add missing foreign key indexes and namespaced session-caching for RLS security helpers)
+- **Codebase size:** 539 files (.ts + .tsx), 125 route files, zero TypeScript errors
+

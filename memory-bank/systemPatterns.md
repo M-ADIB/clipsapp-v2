@@ -687,7 +687,7 @@ Every feature implementation follows this loop:
 
 ### Feature-Specific Verification Checklists
 
-**Chat / Messaging (Readiness: 90/100):**
+**Chat / Messaging (Readiness: 98/100):**
 - [x] Send a message → appears in thread
 - [x] Receive a message (or refresh) → new message visible
 - [x] Scroll to bottom on new message
@@ -702,6 +702,10 @@ Every feature implementation follows this loop:
 - [x] ARIA labels on all icon-only buttons
 - [x] Escape key dismisses reply-to preview
 - [x] No nested `<button>` elements (ChatRoomCard uses `<div role="button">`)
+- [x] Message forwarding: `ForwardMessageDialog` room picker + `useForwardMessage()` + "↪ Forwarded" badge
+- [x] Message pinning: `chat_pinned_messages` table + `PinnedMessagesBar` + 📌 indicator (owner/manager/senior_editor only)
+- [x] Rate limiting: 500ms client-side throttle with toast feedback
+- [x] Query key factory: `pinnedMessages` + `roomMembers` centralized
 
 **Forms:**
 - [ ] All field types render (text, select, checkbox, date, etc.)
