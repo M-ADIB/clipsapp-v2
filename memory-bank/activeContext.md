@@ -1,6 +1,6 @@
 # ClipsOS V2 — Active Context
 
-> Last updated: 2026-05-24 (Chat 90→98/100 — message forwarding, pinning, rate limiting, query key cleanup. 14 commits since last sync.)
+> Last updated: 2026-05-25 (Production Overview 100/100 — interactive tracking table matching spreadsheet with inline edits and editor assignments on Owner/Manager dashboards)
 
 ## Platform: Supabase (`toyekrhhzqmltstrycdv`)
 
@@ -160,6 +160,7 @@
 | **Dashboard Charts** | ✅ | Interactive Recharts, editor performance |
 | **HQ Analytics** | ✅ | Overview + Editors tabs, reusable charts |
 | **Web Analytics Dashboard** | 🔄 WIP | `analytics_events` table, `track-analytics` Edge Function, `AnalyticsDashboard.tsx` (598 lines — KPIs, Recharts AreaChart, A/B testing, geo/device/referrer breakdowns), `use-analytics.ts` hook |
+| **Production Overview** | ✅ | ProductionOverviewTable.tsx, OwnerDashboard.tsx, ManagerDashboard.tsx, use-clients.ts |
 | **Client Workspace Settings** | ✅ | 4 sections: General Info, Social Media (JSONB), Branding & Content (color palette), Production Settings |
 | **Kanban Drag-and-Drop** | ✅ | HTML5 DnD on TasksBoard — column highlights, position persistence to DB |
 | **Team Member Profiles** | ✅ | Role-specific content per profile |
@@ -172,6 +173,7 @@
 | **Dynamic Browser Titles** | ✅ | WorkspaceContext auto-syncs `document.title` on `setHeaderConfig()` — `"Page | ClipsOS"` |
 | **DB Scalability** | ✅ | 14 missing FK indexes + namespaced GUC caching for `tenant_id_for_user`, `has_role`, `get_user_role` |
 | **Activity Log Triggers** | 🔄 WIP | `log_activity()` function — auto-logs CUD on clients, videos, comments, versions, journey steps |
+
 
 ### Currency Standard — AED Primary
 - All monetary displays use AED (UAE Dirham) as primary currency

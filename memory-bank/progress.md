@@ -1,6 +1,6 @@
 # ClipsOS V2 — Progress Tracker
 
-> Last refreshed: 2026-05-24 — 14 commits since last sync, analytics + activity log WIP
+> Last refreshed: 2026-05-25 — Production Overview feature implemented and verified on Owner and Manager dashboards
 
 ## Platform: Supabase (`toyekrhhzqmltstrycdv`) ✅
 - [x] Active repo: `M-ADIB/clipsos-hub`
@@ -87,11 +87,12 @@
 - [x] `/client/files` — Client Files
 
 ### Owner Dashboard Pages ✅
-- [x] Owner Dashboard — 3 tabs (Sales, Production, Finance) with interactive Recharts
+- [x] Owner Dashboard — 3 tabs (Agency Command, Sales Overview, Production Overview) with interactive Recharts, active cycle tracking, and inline spreadsheet editor
 - [x] Owner Finance — 4 tabs (Overview, Revenue Breakdown, Subscriptions, Costs) — AED currency
 - [x] All owner routes functional (30 route files)
 
 ### Manager Dashboard ✅
+- [x] Manager Dashboard — 2 tabs (Production Command, Production Overview) with live tracking, active cycle tracking, and inline spreadsheet editor
 - [x] 24 manager route files — full production/sales/communication parity with owner minus finance
 - [x] Manager Settings — Team-only view (no App Branding, Billing, Integrations)
 - [x] Role-aware navigation with dynamic `basePath`
