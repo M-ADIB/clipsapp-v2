@@ -1,0 +1,1142 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * ClipsOS V2 — Design System
+ *
+ * Source of truth: memory-bank/style-theme.md
+ * Extracted from Figma (Client Dashboard 1:987 + sibling frames).
+ *
+ * Dark-first. Light mode is intentionally not implemented for V1.
+ *
+ * RULES (enforced):
+ * - Never use hex colors in components — always use semantic tokens below
+ * - Never use status names → color maps in code — read from `statuses` table
+ * - All new color tokens must be added here as oklch + registered in @theme inline
+ */
+
+@theme inline {
+  /* Radii — see style-theme.md §5 */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+
+  /* Surface system */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-strong: var(--foreground-strong);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-foreground-disabled: var(--foreground-disabled);
+  --color-foreground-overlay: var(--foreground-overlay);
+  --color-label-uppercase: var(--label-uppercase);
+
+  --color-surface: var(--surface);
+  --color-surface-card: var(--surface-card);
+  --color-surface-card-2: var(--surface-card-2);
+  --color-sidebar: var(--sidebar);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-input: var(--surface-input);
+  --color-surface-muted: var(--surface-muted);
+
+  /* Card / popover (shadcn aliases → our surface system) */
+  --color-card: var(--surface-card);
+  --color-card-foreground: var(--foreground-strong);
+  --color-popover: var(--surface-card);
+  --color-popover-foreground: var(--foreground-strong);
+
+  /* Brand */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-glow: var(--primary-glow);
+  --color-primary-soft: var(--primary-soft);
+
+  /* Chat bubbles — own-message background & foreground */
+  --color-chat-bubble: var(--chat-bubble);
+  --color-chat-bubble-foreground: var(--chat-bubble-foreground);
+  --color-chat-bubble-muted: var(--chat-bubble-muted);
+
+  /* @mention pills — goldish highlight */
+  --color-mention: var(--mention);
+  --color-mention-foreground: var(--mention-foreground);
+
+  /* shadcn aliases */
+  --color-secondary: var(--surface-input);
+  --color-secondary-foreground: var(--foreground-strong);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--foreground-muted);
+  --color-accent: var(--surface-input);
+  --color-accent-foreground: var(--foreground-strong);
+  --color-destructive: var(--status-danger);
+  --color-destructive-foreground: var(--background);
+
+  /* Status (matches default seeded statuses.color values) */
+  --color-status-review: var(--status-review);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-danger: var(--status-danger);
+  --color-status-info: var(--status-info);
+
+  /* Borders / focus */
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-active: var(--border-active);
+  --color-input: var(--surface-input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+
+  /* Sidebar (shadcn sidebar component aliases) */
+  --color-sidebar-foreground: var(--foreground-strong);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--surface-input);
+  --color-sidebar-accent-foreground: var(--primary);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--ring);
+
+  /* Typography families */
+  --font-display: "Neue Haas Grotesk Display Pro", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  /* Type scale (size / line-height) */
+  --text-display-xl: 40px;
+  --text-display-xl--line-height: 40px;
+  --text-display-xl--letter-spacing: -0.4px;
+  --text-display-xl--font-weight: 500;
+
+  --text-display-lg: 26px;
+  --text-display-lg--line-height: 26px;
+  --text-display-lg--letter-spacing: -0.26px;
+  --text-display-lg--font-weight: 500;
+
+  --text-display-md: 22px;
+  --text-display-md--line-height: 22px;
+  --text-display-md--letter-spacing: -0.22px;
+  --text-display-md--font-weight: 500;
+
+  --text-display-sm: 18px;
+  --text-display-sm--line-height: 18px;
+  --text-display-sm--letter-spacing: -0.18px;
+  --text-display-sm--font-weight: 500;
+
+  --text-body-lg: 14px;
+  --text-body-lg--line-height: 20px;
+  --text-body-lg--letter-spacing: -0.35px;
+
+  --text-body: 12px;
+  --text-body--line-height: 16px;
+
+  --text-caption: 10px;
+  --text-caption--line-height: 15px;
+
+  --text-eyebrow: 10px;
+  --text-eyebrow--line-height: 20px;
+  --text-eyebrow--letter-spacing: 1px;
+  --text-eyebrow--font-weight: 600;
+}
+
+/*
+ * Color values.
+ * :root = light mode defaults, .dark = dark mode values.
+ * BrandingContext overrides these dynamically when custom colors are set.
+ */
+
+/* ── Light mode (default) ─────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --background: #ffffff;
+  --surface: #f7f7f7;
+  --surface-card: #ffffff;
+  --surface-card-2: #f7f7f7;
+  --sidebar: #f7f7f7;
+  --surface-raised: #ebebeb;
+  --surface-input: #ffffff;
+  --surface-muted: #eaeaea;
+
+  /* Foreground */
+  --foreground: #131314;
+  --foreground-strong: #1e1c1d;
+  --foreground-muted: #5f5e5a;
+  --foreground-subtle: rgba(26, 26, 26, 0.6);
+  --foreground-disabled: #a0a0a0;
+  --foreground-overlay: rgba(0, 0, 0, 0.5);
+  --label-uppercase: rgba(0, 0, 0, 0.4);
+
+  /* Brand */
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --primary-glow: #8b5cf6;
+  --primary-soft: rgba(124, 58, 237, 0.1);
+
+  /* Chat bubbles — derived from brand primary */
+  --chat-bubble: var(--primary);
+  --chat-bubble-foreground: var(--primary-foreground);
+  --chat-bubble-muted: color-mix(in oklch, var(--primary) 15%, transparent);
+
+  /* @mention pills — warm amber-gold */
+  --mention: #b45309; /* amber-700 — rich gold */
+  --mention-foreground: #fffbeb; /* amber-50 — creamy white */
+
+  /* Status */
+  --status-review: #7c3aed;
+  --status-success: #16a34a;
+  --status-warning: #ca8a04;
+  --status-danger: #dc2626;
+  --status-info: #2563eb;
+
+  /* Borders */
+  --border: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-active: #7c3aed;
+  --ring: #7c3aed;
+
+  /* Charts */
+  --chart-1: var(--primary);
+  --chart-2: var(--status-success);
+  --chart-3: var(--status-warning);
+  --chart-4: var(--status-danger);
+  --chart-5: var(--status-info);
+}
+
+/* ── Dark mode ────────────────────────────────────────────── */
+.dark {
+  /* Backgrounds */
+  --background: oklch(0.16 0.002 286); /* #131314 */
+  --surface: oklch(0.19 0.003 286); /* #1c1b1c */
+  --surface-card: oklch(0.2 0.003 286); /* #1e1c1d */
+  --surface-card-2: oklch(0.21 0.003 286); /* #201f20 */
+  --sidebar: oklch(0.18 0.004 286); /* #18181b */
+  --surface-raised: oklch(0.26 0.008 300); /* #2b2930 */
+  --surface-input: oklch(0.3 0.009 300); /* #36343b */
+  --surface-muted: oklch(0.29 0.005 286); /* #353436 */
+
+  /* Foreground */
+  --foreground: oklch(1 0 0); /* #ffffff */
+  --foreground-strong: oklch(0.92 0.003 326); /* #e5e2e3 */
+  --foreground-muted: oklch(0.83 0.018 308); /* #cdc3d0 */
+  --foreground-subtle: oklch(0.83 0.003 326 / 0.6);
+  --foreground-disabled: oklch(0.62 0.004 286); /* #939193 */
+  --foreground-overlay: oklch(1 0 0 / 0.5);
+  --label-uppercase: oklch(0.83 0.018 308 / 0.4);
+
+  /* Brand (lavender) */
+  --primary: oklch(0.91 0.045 311); /* #ecd7ff */
+  --primary-foreground: oklch(0.2 0.003 286); /* on-primary text */
+  --primary-glow: oklch(0.84 0.08 308); /* #d8b4fe */
+  --primary-soft: oklch(0.91 0.045 311 / 0.1);
+
+  /* Chat bubbles — in dark mode, primary is light-for-text; mix with black to get a rich bg */
+  --chat-bubble: color-mix(in oklch, var(--primary) 45%, black);
+  --chat-bubble-foreground: #ffffff;
+  --chat-bubble-muted: color-mix(in oklch, var(--primary) 20%, transparent);
+
+  /* @mention pills — bright gold on dark */
+  --mention: #f59e0b; /* amber-500 — vibrant gold */
+  --mention-foreground: #451a03; /* amber-950 — deep dark brown */
+
+  /* Status — matches default seeded statuses.color hex values */
+  --status-review: oklch(0.91 0.045 311); /* #ecd7ff */
+  --status-success: oklch(0.86 0.15 145); /* #84e787 */
+  --status-warning: oklch(0.91 0.11 102); /* #e7e384 */
+  --status-danger: oklch(0.81 0.09 24); /* #ffb4ab */
+  --status-info: oklch(0.84 0.08 240); /* #a3d2ff */
+
+  /* Borders */
+  --border: oklch(1 0 0 / 0.08);
+  --border-strong: oklch(1 0 0 / 0.2);
+  --border-subtle: oklch(1 0 0 / 0.05);
+  --border-active: oklch(0.91 0.045 311); /* primary */
+  --ring: oklch(0.91 0.045 311);
+
+  /* Charts */
+  --chart-1: var(--primary);
+  --chart-2: var(--status-success);
+  --chart-3: var(--status-warning);
+  --chart-4: var(--status-danger);
+  --chart-5: var(--status-info);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-body);
+    color-scheme: dark light;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground-strong);
+    font-feature-settings: "ss01", "cv01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 30%, transparent);
+    color: var(--color-foreground);
+  }
+}
+
+@layer utilities {
+  /* Decorative mesh-blur used in glass alert panels */
+  .mesh-blur {
+    filter: blur(32px);
+  }
+
+  /* Brand gradient — used on progress bars, hero accents */
+  .bg-gradient-primary {
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-glow) 100%);
+  }
+
+  /* ── TaskCard ─ "What's Next" card styles ───────────────────── */
+  /* Light mode: transparent bg, subtle border, accent left border */
+  .task-card {
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-left: 5px solid var(--primary-glow, #d8b4fe);
+    border-radius: 7px;
+  }
+
+  /* Dark mode: filled surface bg, no outline, accent left border */
+  .dark .task-card {
+    background: var(--surface-card);
+    border: none;
+    border-left: 5px solid var(--primary-glow, #d8b4fe);
+  }
+
+  /* Badge — Light: solid fill + white text */
+  .task-card-badge {
+    background-color: var(--badge-light-bg, #cdb0ff);
+    color: #ffffff;
+  }
+
+  /* Badge — Dark: translucent fill + colored text */
+  .dark .task-card-badge {
+    background-color: var(--badge-dark-bg, rgba(236, 215, 255, 0.1));
+    color: var(--badge-dark-text, #ecd7ff);
+  }
+}
+
+/* ── Mobile responsiveness ─────────────────────────────────────── */
+
+/* Smooth scrolling and touch handling */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  /* Safe area padding for devices with notches */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Horizontal-scroll containers — hide scrollbar for swipe UX on mobile */
+@media (max-width: 767px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 0;
+    display: none;
+  }
+
+  /* Snap scrolling smoothness */
+  .snap-x {
+    scroll-padding: 0 4px;
+  }
+
+  /* Sidebar: use overlay mode on mobile (sheet-style) */
+  [data-sidebar="sidebar"] {
+    --sidebar-width: 280px;
+  }
+
+  /* Tighter task cards on mobile — matches Figma ~10px padding, ~12px radius */
+  .task-card {
+    border-radius: 10px;
+  }
+
+  /* Touch targets — ensure minimum 44px tap area */
+  button,
+  [role="button"],
+  a {
+    min-height: 36px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Micro-Interactions & Polish Layer
+   Makes the app feel alive — subtle, never over-the-top.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Global Transitions ────────────────────────────────────────
+   Smooth default transition on all interactive elements */
+@layer base {
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* ── 2. Button Press Effect ───────────────────────────────────────
+   Subtle scale-down on click for tactile feedback */
+@layer utilities {
+  /* Primary / solid buttons: scale on press */
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active {
+    transform: scale(0.97);
+  }
+
+  /* Icon-only buttons: slightly bigger scale effect */
+  button[aria-label]:not(:disabled):active {
+    transform: scale(0.92);
+  }
+}
+
+/* ── 3. Page / Route Transition ───────────────────────────────────
+   Fade-in on page mount. Works with TanStack Router's Outlet. */
+@keyframes clipsos-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apply to the main content area — any direct child of the layout */
+[data-slot="content"] > *,
+main > * {
+  animation: clipsos-page-enter 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── 4. Sidebar Active Indicator ──────────────────────────────────
+   Left-edge glow bar on the active nav item */
+[data-sidebar="menu-button"][data-active="true"] {
+  position: relative;
+  background: color-mix(in oklab, var(--color-primary) 10%, transparent) !important;
+}
+
+[data-sidebar="menu-button"][data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--color-primary);
+  box-shadow: 0 0 8px color-mix(in oklab, var(--color-primary) 40%, transparent);
+}
+
+/* ── 5. Card Hover Elevation ──────────────────────────────────────
+   Cards lift slightly on hover for depth feedback */
+@layer utilities {
+  .hover-lift {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Table rows: subtle highlight sweep on hover */
+@layer base {
+  tbody tr {
+    transition: background-color 120ms ease;
+  }
+}
+
+/* ── 6. Focus Ring ────────────────────────────────────────────────
+   Consistent, branded focus ring across all focusable elements */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Remove inner outline for elements that have their own focus styles */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+}
+
+/* ── 7. Skeleton Loading Shimmer ──────────────────────────────────
+   Refined shimmer for loading placeholders */
+@keyframes clipsos-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-pulse {
+  animation: none !important;
+  background: linear-gradient(
+    90deg,
+    var(--surface-raised) 0%,
+    var(--surface-card-2) 40%,
+    var(--surface-raised) 80%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: clipsos-shimmer 1.5s ease-in-out infinite !important;
+}
+
+/* ── 8. Scrollbar Styling ─────────────────────────────────────────
+   Thin, themed scrollbars that don't fight the design */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-raised) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--surface-raised);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--surface-input);
+  }
+}
+
+/* ── 9. Toast Slide-In ────────────────────────────────────────────
+   Override Sonner's default animation with a smoother entrance */
+[data-sonner-toaster] [data-sonner-toast] {
+  --y: translateY(0);
+  backdrop-filter: blur(12px);
+}
+
+/* ── 10. Dialog / Modal Backdrop ──────────────────────────────────
+   Smoother backdrop blur for overlays */
+[data-state="open"][role="dialog"]::backdrop,
+.fixed.inset-0.bg-black\/50 {
+  backdrop-filter: blur(4px);
+}
+
+/* ── 11. Tabs underline animation ─────────────────────────────────
+   Smooth sliding underline for tab navigation */
+[role="tab"] {
+  position: relative;
+}
+
+[role="tab"][data-state="active"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  animation: clipsos-tab-enter 0.2s ease both;
+}
+
+@keyframes clipsos-tab-enter {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ── 12. Badge Pulse (for notification counts) ────────────────────
+   Subtle pulse on notification badges to draw attention */
+@keyframes clipsos-badge-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.badge-pulse {
+  animation: clipsos-badge-pulse 2s ease-in-out infinite;
+}
+
+/* ── 13. Tooltip Fade ─────────────────────────────────────────────
+   Faster, crisper tooltip appearance */
+[data-state="delayed-open"][data-side] {
+  animation: clipsos-tooltip-in 0.15s ease both;
+}
+
+@keyframes clipsos-tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── 14. Details / Toggle blocks (official @tiptap/extension-details) ──
+   Notion-style collapsible script cards.
+   Created via toolbar "Insert Toggle" or right-click → "Save as Script". */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────── */
+.ProseMirror [data-type="details"] {
+  position: relative;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in oklch, var(--color-border) 90%, transparent);
+  background: color-mix(in oklch, var(--color-surface-card) 65%, transparent);
+  /* NO overflow:hidden — the drag handle needs to escape the box */
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.ProseMirror [data-type="details"]:hover {
+  border-color: color-mix(in oklch, var(--color-primary) 55%, var(--color-border));
+  box-shadow: 0 2px 12px color-mix(in oklch, var(--color-primary) 8%, transparent);
+}
+
+.ProseMirror [data-type="details"].is-open {
+  border-color: color-mix(in oklch, var(--color-primary) 50%, var(--color-border));
+  box-shadow:
+    0 0 0 1.5px color-mix(in oklch, var(--color-primary) 18%, transparent),
+    0 4px 16px color-mix(in oklch, var(--color-primary) 10%, transparent);
+  background: color-mix(in oklch, var(--color-surface-card) 90%, transparent);
+}
+
+/* ── Toggle button (chevron) ─────────────────────────────────────────── */
+/* Extension renders a real <button> — style as a visible rounded pill */
+.ProseMirror [data-type="details"] > button:not(.script-drag-grip) {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--color-foreground-muted) 14%, transparent);
+  border: 1.5px solid color-mix(in oklch, var(--color-foreground-muted) 28%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-foreground-muted);
+  padding: 0;
+  z-index: 3;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.ProseMirror [data-type="details"] > button:not(.script-drag-grip):hover {
+  background: color-mix(in oklch, var(--color-primary) 18%, transparent);
+  border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+  color: var(--color-primary);
+}
+
+/* Chevron — right-pointing triangle when collapsed */
+.ProseMirror [data-type="details"] > button:not(.script-drag-grip)::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4.5px 0 4.5px 6.5px;
+  border-color: transparent transparent transparent currentColor;
+  margin-left: 1px;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 90° rotation when expanded */
+.ProseMirror [data-type="details"].is-open > button:not(.script-drag-grip)::after {
+  transform: rotate(90deg);
+  margin-left: 0;
+  margin-top: 1px;
+}
+
+/* ── Summary / title bar ─────────────────────────────────────────────── */
+.ProseMirror [data-type="detailsSummary"] {
+  display: block;
+  list-style: none;
+  padding: 10px 14px 10px 44px; /* 44 = 10 edge + 22 btn + 12 gap */
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-foreground-strong);
+  cursor: text;
+  min-height: 42px;
+  border-radius: 9px 9px 0 0;
+  transition: background 0.12s ease;
+}
+
+.ProseMirror [data-type="detailsSummary"]::-webkit-details-marker {
+  display: none;
+}
+
+.ProseMirror [data-type="detailsSummary"] p {
+  margin: 0;
+}
+
+/* Rounded all corners when collapsed (no content bar below) */
+.ProseMirror [data-type="details"]:not(.is-open) [data-type="detailsSummary"] {
+  border-radius: 9px;
+}
+
+.ProseMirror [data-type="detailsSummary"]:hover {
+  background: color-mix(in oklch, var(--color-accent) 7%, transparent);
+}
+
+/* Placeholder for empty summary */
+.ProseMirror [data-type="detailsSummary"] p:only-child:empty::before {
+  content: "Script title…";
+  color: var(--color-foreground-disabled);
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* ── Content body ────────────────────────────────────────────────────── */
+.ProseMirror [data-type="detailsContent"] {
+  padding: 8px 14px 12px 44px;
+  border-top: 1.5px solid color-mix(in oklch, var(--color-border) 70%, transparent);
+  animation: details-expand 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 0 9px 9px;
+}
+
+.ProseMirror [data-type="detailsContent"] p {
+  margin: 3px 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--color-foreground);
+}
+
+/* ── Collapsed state ─────────────────────────────────────────────────── */
+.ProseMirror [data-type="details"]:not(.is-open) [data-type="detailsContent"] {
+  display: none;
+}
+
+.ProseMirror [data-type="details"]:not(.is-open) {
+  background: color-mix(in oklch, var(--color-surface-card) 45%, transparent);
+}
+
+/* ── Expand animation ────────────────────────────────────────────────── */
+@keyframes details-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Custom drag-to-reorder grip (script-drag-grip) ─────────────────── */
+/* Injected via useEffect into every [data-type="details"] block.        */
+/* Shows as ⠿ dot-grid icon at the top-right corner on hover.            */
+.script-drag-grip {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: grab;
+  color: var(--color-foreground-disabled);
+  opacity: 0;
+  padding: 0;
+  z-index: 4;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+  user-select: none;
+  /* Don't participate in text content */
+  -webkit-user-select: none;
+}
+
+/* Reveal grip on card hover */
+[data-type="details"]:hover .script-drag-grip,
+.script-drag-grip:hover {
+  opacity: 1;
+}
+
+.script-drag-grip:hover {
+  background: color-mix(in oklch, var(--color-surface-raised) 90%, transparent);
+  color: var(--color-foreground-muted);
+}
+
+.script-drag-grip:active {
+  cursor: grabbing;
+  background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+}
+
+.script-drag-grip svg {
+  pointer-events: none;
+}
+
+/* Drag-over drop zone highlight */
+.ProseMirror [data-type="details"][data-drag-over="true"] {
+  border-color: var(--color-primary);
+  background: color-mix(in oklch, var(--color-primary) 8%, var(--color-surface-card));
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 8px 24px color-mix(in oklch, var(--color-primary) 15%, transparent);
+}
+
+/* ── 15. TipTap Table & Task List Styles ────────────────── */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  min-width: 1em;
+  border: 1px solid var(--color-border-strong);
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror th {
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--color-surface-raised);
+}
+
+.ProseMirror .selectedCell:after {
+  background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--color-primary);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.ProseMirror th:hover .column-resize-handle,
+.ProseMirror td:hover .column-resize-handle {
+  opacity: 0.5;
+}
+
+.ProseMirror .column-resize-handle:hover,
+.ProseMirror .column-resize-handle:active {
+  opacity: 1;
+}
+
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+}
+
+.ProseMirror [data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.ProseMirror [data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror [data-type="taskList"] li > label {
+  margin-right: 0.75rem;
+  user-select: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.25rem;
+}
+
+.ProseMirror [data-type="taskList"] li > label input[type="checkbox"] {
+  appearance: none;
+  background-color: transparent;
+  margin: 0;
+  font: inherit;
+  color: var(--color-foreground);
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.ProseMirror [data-type="taskList"] li > label input[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.ProseMirror [data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid var(--color-primary-foreground);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-0.5px, -1.5px);
+  position: absolute;
+}
+
+.ProseMirror [data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror [data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--color-foreground-disabled);
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* PREMIUM VISUAL UX POLISH & INTERACTION SYSTEM          */
+/* ═══════════════════════════════════════════════════════ */
+
+/* ── 1. NATIVE ROUNDED OVERLAY SCROLLBARS ── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-raised);
+  border: 1.5px solid var(--background);
+  border-radius: 9999px;
+  transition: background 0.15s ease-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-input);
+}
+
+/* Firefox compatibility */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-raised) transparent;
+}
+
+/* ── 2. HARDWARE-ACCELERATED PAGE ENTRY TRANSITION ── */
+@keyframes clips-page-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.996);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.page-entry-motion {
+  animation: clips-page-fade-in-up 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* ── 3. PREMIUM INPUT FOCUS GLOW & ROTATIONS ── */
+input:focus-visible,
+textarea:focus-visible,
+[data-focused="true"] {
+  outline: none;
+  border-color: var(--primary-glow) !important;
+  box-shadow: 0 0 0 2px var(--primary-soft) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Smooth transition for form elements */
+input,
+textarea,
+select {
+  transition:
+    border-color 0.15s ease-out,
+    box-shadow 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+/* FullCalendar premium overrides */
+.sales-calendar .fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--surface-muted);
+  --fc-today-bg-color: var(--primary-soft);
+  --fc-event-border-color: transparent;
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: var(--border);
+  --fc-button-text-color: var(--foreground-muted);
+  --fc-button-hover-bg-color: var(--surface-raised);
+  --fc-button-hover-border-color: var(--border-strong);
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
+  --fc-button-active-text-color: var(--primary-foreground);
+  color: var(--foreground);
+  font-family: inherit;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  flex-grow: 1 !important;
+}
+
+.sales-calendar .fc-view-harness {
+  flex-grow: 1 !important;
+  height: auto !important;
+}
+
+.sales-calendar .fc .fc-col-header-cell-cushion,
+.sales-calendar .fc .fc-daygrid-day-number {
+  color: var(--foreground-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sales-calendar .fc .fc-toolbar-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--foreground-strong);
+}
+
+.sales-calendar .fc .fc-button {
+  font-size: 0.75rem;
+  border-radius: var(--radius-md);
+  padding: 0.25rem 0.75rem;
+  transition: all 0.15s ease;
+}
+
+/* Fix active button text: force dark text on primary bg */
+.sales-calendar .fc .fc-button-active,
+.sales-calendar .fc .fc-button.fc-button-active:focus,
+.sales-calendar .fc .fc-button-primary:not(:disabled).fc-button-active {
+  color: var(--primary-foreground) !important;
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  box-shadow: none !important;
+}
+
+/* Remove button group inner borders that cause visual breaking */
+.sales-calendar .fc .fc-button-group > .fc-button {
+  border-radius: 0;
+  margin: 0;
+  border-right-width: 0;
+}
+.sales-calendar .fc .fc-button-group > .fc-button:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.sales-calendar .fc .fc-button-group > .fc-button:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-right-width: 1px;
+}
+
+.sales-calendar .fc .fc-event {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.sales-calendar .fc .fc-daygrid-more-link {
+  color: var(--primary);
+  font-size: 0.7rem;
+}
+
+.sales-calendar .fc .fc-timegrid-slot-label-cushion {
+  color: var(--foreground-muted);
+  font-size: 0.7rem;
+}
+
+/* Mobile: allow FullCalendar toolbar to wrap */
+@media (max-width: 640px) {
+  .sales-calendar .fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sales-calendar .fc .fc-toolbar-title {
+    font-size: 0.95rem;
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+  .sales-calendar .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+}

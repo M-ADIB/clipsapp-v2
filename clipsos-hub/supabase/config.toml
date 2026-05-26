@@ -1,0 +1,4 @@
+project_id = "toyekrhhzqmltstrycdv"
+
+[functions.download-media]
+verify_jwt = false

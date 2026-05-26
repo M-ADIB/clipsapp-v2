@@ -1,0 +1,24 @@
+---
+description: ClipsOS V2 — Multi-tenant agency OS
+globs: "**/*"
+alwaysApply: true
+---
+
+# ClipsOS V2
+
+Read `AGENTS.md` at the project root for all architecture rules, naming conventions, and code quality standards.
+
+## Key Files
+- `AGENTS.md` — Master directive (MUST read first)
+- `memory-bank/projectbrief.md` — Architecture overview
+- `memory-bank/systemPatterns.md` — Code patterns
+- `memory-bank/activeContext.md` — Current phase
+- `docs/ClipsApp-PRD.md` — Full product requirements
+- `docs/PERMISSIONS-MATRIX.md` — Role × feature matrix
+
+## Non-Negotiable Rules
+1. Every table has `tenant_id` (except tenants/profiles)
+2. RLS on every public table
+3. Never hard-code statuses/stages/video types — use lookup tables
+4. TypeScript strict mode — no `any`
+5. Finance data is Owner-only

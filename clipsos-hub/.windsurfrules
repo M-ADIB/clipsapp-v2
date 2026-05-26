@@ -1,0 +1,7 @@
+# ClipsOS V2 — Windsurf Rules
+# This is a pointer file. The source of truth is AGENTS.md.
+# Read AGENTS.md for all project conventions and architecture rules.
+
+See AGENTS.md for full project instructions.
+See memory-bank/ for architecture context.
+See docs/ for PRD, permissions matrix, and database schema reference.
