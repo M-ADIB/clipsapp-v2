@@ -9,7 +9,7 @@
 import { useEffect } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { ScheduleDashboard } from "@/components/dashboards/owner/ScheduleDashboard";
+import { ScheduleDashboard } from "@/components/dashboards/shared/ScheduleDashboard";
 
 export function ContentCreatorSchedulePage() {
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();

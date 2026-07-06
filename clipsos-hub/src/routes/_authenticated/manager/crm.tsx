@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OwnerCrmPage } from "@/components/dashboards/owner/OwnerCrmPage";
+import { OwnerCrmPage } from "@/components/dashboards/shared/OwnerCrmPage";
 
 export const Route = createFileRoute("/_authenticated/manager/crm")({
   component: OwnerCrmPage,
