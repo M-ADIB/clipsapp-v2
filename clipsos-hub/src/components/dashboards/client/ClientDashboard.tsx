@@ -10,13 +10,11 @@
  */
 import { useEffect, useState, useMemo } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
-import { useQuery } from "@tanstack/react-query";
+import { usePipelineStats, useClientProjects } from "@/hooks/use-client-dashboard";
 import { CheckCircle2, FileText, FolderOpen, ArrowUpRight, Sparkles, X } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
 import { TaskCard, ProjectCard } from "@/components/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -24,124 +22,11 @@ import { TabPanel } from "@/components/ui/tab-panel";
 import { JourneyTab } from "@/components/dashboards/owner/workspace/JourneyTab";
 import { ClientBillingTab } from "@/components/dashboards/owner/finance/ClientBillingTab";
 import { useClientJourney } from "@/hooks/data";
-import { useClientFoundationReady } from "@/hooks/use-clients";
+import { useClientFoundationReady, useMyClientIds } from "@/hooks/use-clients";
 
 /* ------------------------------------------------------------------ */
 /* Hook: fetch client's primary client_id from client_access          */
 /* ------------------------------------------------------------------ */
-
-function useClientAccess() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["client_access", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_access")
-        .select("client_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return (data ?? []).map((r) => r.client_id);
-    },
-  });
-}
-
-/* ------------------------------------------------------------------ */
-/* Hook: pipeline stats for this client                               */
-/* ------------------------------------------------------------------ */
-
-interface PipelineStats {
-  total: number;
-  in_progress: number;
-  review: number;
-  scheduled: number;
-  posted: number;
-}
-
-function usePipelineStats(clientId: string | undefined) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: ["client-pipeline", tenantId, clientId],
-    enabled: !!tenantId && !!clientId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("videos")
-        .select(`id, status:statuses!videos_status_id_fkey(slug)`)
-        .eq("client_id", clientId!)
-        .eq("tenant_id", tenantId!)
-        .is("archived_at", null);
-
-      if (error) throw error;
-
-      const stats: PipelineStats = {
-        total: data.length,
-        in_progress: 0,
-        review: 0,
-        scheduled: 0,
-        posted: 0,
-      };
-
-      for (const v of data) {
-        const slug = (v.status as { slug?: string } | null)?.slug ?? "";
-        switch (slug) {
-          case "in_progress":
-            stats.in_progress++;
-            break;
-          case "rough_cut":
-          case "in_review":
-          case "internal_review":
-          case "final_review":
-          case "revisions_requested":
-            stats.review++;
-            break;
-          case "scheduled":
-            stats.scheduled++;
-            break;
-          case "posted":
-            stats.posted++;
-            break;
-        }
-      }
-
-      return stats;
-    },
-  });
-}
-
-/* ------------------------------------------------------------------ */
-/* Hook: projects for this client                                     */
-/* ------------------------------------------------------------------ */
-
-function useClientProjects(clientId: string | undefined) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: ["client-projects", tenantId, clientId],
-    enabled: !!tenantId && !!clientId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("projects")
-        .select(
-          `
-          id,
-          project_name,
-          status,
-          video_count,
-          videos_completed,
-          progress,
-          start_date,
-          cadence
-        `,
-        )
-        .eq("client_id", clientId!)
-        .eq("tenant_id", tenantId!)
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-}
 
 /* ------------------------------------------------------------------ */
 /* Sub-component: VideoStatCard                                        */
@@ -297,7 +182,7 @@ export function ClientDashboard() {
   const navigate = useNavigate();
 
   /* data */
-  const { data: clientIds = [], isLoading: accessLoading } = useClientAccess();
+  const { data: clientIds = [], isLoading: accessLoading } = useMyClientIds();
   const clientId = clientIds[0];
   const { data: pipeline, isLoading: pipelineLoading } = usePipelineStats(clientId);
   const { data: journeySteps = [], isLoading: journeyLoading } = useClientJourney(clientId);
@@ -574,7 +459,9 @@ export function ClientDashboard() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
-                <h4 className="text-xs font-semibold text-foreground-strong">Content Studio Activated!</h4>
+                <h4 className="text-xs font-semibold text-foreground-strong">
+                  Content Studio Activated!
+                </h4>
                 <button
                   onClick={() => {
                     localStorage.setItem(`dismissed_onboarding_${clientId}`, "true");
@@ -586,7 +473,8 @@ export function ClientDashboard() {
                 </button>
               </div>
               <p className="text-[11px] text-foreground-muted mt-1 leading-relaxed">
-                Click here to view your Content Studio, answer onboarding questions, and view your strategy.
+                Click here to view your Content Studio, answer onboarding questions, and view your
+                strategy.
               </p>
               <div className="mt-2.5 flex justify-end">
                 <button
