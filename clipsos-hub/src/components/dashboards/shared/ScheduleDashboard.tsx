@@ -43,7 +43,7 @@ import { useCalendlyEvents } from "@/hooks/use-leads";
 import { useCloserRegion, useSyncCalendlyEvents } from "@/hooks/use-closer-region";
 import { CalendlySettingsDialog } from "@/components/dashboards/closer/CalendlySettingsDialog";
 import { toast } from "sonner";
-import type { CalendlyEvent } from "@/integrations/supabase/db-types";
+import { calendlyToScheduleEvent, type ScheduleEvent } from "./schedule-adapters";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeam } from "@/hooks/use-team";
 import { useQuery } from "@tanstack/react-query";
@@ -54,20 +54,6 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
-
-interface ScheduleEvent {
-  id: string;
-  title: string;
-  type: "discovery" | "follow_up" | "closing" | "internal";
-  startHour: number; // 0-23
-  startMinute: number;
-  durationMinutes: number;
-  dayOffset: number; // 0 = Monday, 6 = Sunday
-  rep: string;
-  attendee?: string;
-  date: Date;
-  sales_user_id?: string | null;
-}
 
 interface ScheduleDashboardProps {
   /** "mock" (default) uses hardcoded events, "live" fetches from calendly_events. */
@@ -105,14 +91,54 @@ const TYPE_LABELS: Record<ScheduleEvent["type"], string> = {
 };
 
 const MEMBER_COLORS = [
-  { name: "blue", border: "rgb(59, 130, 246)", bg: "rgba(59, 130, 246, 0.12)", text: "rgb(59, 130, 246)" },
-  { name: "purple", border: "rgb(168, 85, 247)", bg: "rgba(168, 85, 247, 0.12)", text: "rgb(168, 85, 247)" },
-  { name: "emerald", border: "rgb(16, 185, 129)", bg: "rgba(16, 185, 129, 0.12)", text: "rgb(16, 185, 129)" },
-  { name: "amber", border: "rgb(245, 158, 11)", bg: "rgba(245, 158, 11, 0.12)", text: "rgb(245, 158, 11)" },
-  { name: "pink", border: "rgb(236, 72, 153)", bg: "rgba(236, 72, 153, 0.12)", text: "rgb(236, 72, 153)" },
-  { name: "indigo", border: "rgb(99, 102, 241)", bg: "rgba(99, 102, 241, 0.12)", text: "rgb(99, 102, 241)" },
-  { name: "orange", border: "rgb(249, 115, 22)", bg: "rgba(249, 115, 22, 0.12)", text: "rgb(249, 115, 22)" },
-  { name: "teal", border: "rgb(20, 184, 166)", bg: "rgba(20, 184, 166, 0.12)", text: "rgb(20, 184, 166)" },
+  {
+    name: "blue",
+    border: "rgb(59, 130, 246)",
+    bg: "rgba(59, 130, 246, 0.12)",
+    text: "rgb(59, 130, 246)",
+  },
+  {
+    name: "purple",
+    border: "rgb(168, 85, 247)",
+    bg: "rgba(168, 85, 247, 0.12)",
+    text: "rgb(168, 85, 247)",
+  },
+  {
+    name: "emerald",
+    border: "rgb(16, 185, 129)",
+    bg: "rgba(16, 185, 129, 0.12)",
+    text: "rgb(16, 185, 129)",
+  },
+  {
+    name: "amber",
+    border: "rgb(245, 158, 11)",
+    bg: "rgba(245, 158, 11, 0.12)",
+    text: "rgb(245, 158, 11)",
+  },
+  {
+    name: "pink",
+    border: "rgb(236, 72, 153)",
+    bg: "rgba(236, 72, 153, 0.12)",
+    text: "rgb(236, 72, 153)",
+  },
+  {
+    name: "indigo",
+    border: "rgb(99, 102, 241)",
+    bg: "rgba(99, 102, 241, 0.12)",
+    text: "rgb(99, 102, 241)",
+  },
+  {
+    name: "orange",
+    border: "rgb(249, 115, 22)",
+    bg: "rgba(249, 115, 22, 0.12)",
+    text: "rgb(249, 115, 22)",
+  },
+  {
+    name: "teal",
+    border: "rgb(20, 184, 166)",
+    bg: "rgba(20, 184, 166, 0.12)",
+    text: "rgb(20, 184, 166)",
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -222,48 +248,6 @@ const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM → 7 PM
 /* Helpers — classify Calendly event names into types                   */
 /* ------------------------------------------------------------------ */
 
-function classifyEventType(eventTypeName: string | null): ScheduleEvent["type"] {
-  const lower = (eventTypeName || "").toLowerCase();
-  if (lower.includes("discovery") || lower.includes("intro")) return "discovery";
-  if (lower.includes("follow") || lower.includes("check-in")) return "follow_up";
-  if (lower.includes("clos") || lower.includes("proposal") || lower.includes("deal"))
-    return "closing";
-  return "internal";
-}
-
-function calendlyToScheduleEvent(
-  event: CalendlyEvent,
-  weekStart: Date,
-  teamMap: Map<string, string>
-): ScheduleEvent | null {
-  const start = new Date(event.start_time);
-  const end = new Date(event.end_time);
-
-  // Get day of week (0=Sun → adjust to Mon=0)
-  const jsDay = getDay(start); // 0=Sun, 1=Mon, ..., 6=Sat
-  const dayOffset = jsDay === 0 ? 6 : jsDay - 1; // Mon=0, Sun=6
-
-  // Check if this event falls within the current week view
-  const weekEnd = addDays(weekStart, 7);
-  if (start < weekStart || start >= weekEnd) return null;
-
-  const repName = event.sales_user_id ? teamMap.get(event.sales_user_id) : undefined;
-
-  return {
-    id: event.id,
-    title: event.event_type_name || "Calendly Event",
-    type: classifyEventType(event.event_type_name),
-    startHour: getHours(start),
-    startMinute: getMinutes(start),
-    durationMinutes: differenceInMinutes(end, start),
-    dayOffset,
-    rep: repName || "You",
-    attendee: event.invitee_name || undefined,
-    date: start,
-    sales_user_id: event.sales_user_id,
-  };
-}
-
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
 /* ------------------------------------------------------------------ */
@@ -340,7 +324,7 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
 
   // Map user IDs to consistent distinct colors
   const memberColorMap = useMemo(() => {
-    const map = new Map<string, typeof MEMBER_COLORS[0]>();
+    const map = new Map<string, (typeof MEMBER_COLORS)[0]>();
     if (teamMembers) {
       const sorted = [...teamMembers].sort((a, b) => (a.id || "").localeCompare(b.id || ""));
       sorted.forEach((m, idx) => {
@@ -382,8 +366,8 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
       isLive
         ? activeEvents.filter((e) => e.sales_user_id && selectedMemberIds.includes(e.sales_user_id))
         : selectedRep === "all"
-        ? activeEvents
-        : activeEvents.filter((e) => e.rep === selectedRep),
+          ? activeEvents
+          : activeEvents.filter((e) => e.rep === selectedRep),
     [isLive, selectedRep, activeEvents, selectedMemberIds],
   );
 
@@ -407,7 +391,7 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
 
     for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
       const events = days[dayIdx].sort(
-        (a, b) => (a.startHour * 60 + a.startMinute) - (b.startHour * 60 + b.startMinute)
+        (a, b) => a.startHour * 60 + a.startMinute - (b.startHour * 60 + b.startMinute),
       );
 
       const columns: ScheduleEvent[][] = [];
@@ -467,7 +451,7 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
   // Toggle checklist selections
   const toggleMemberId = (id: string) => {
     setSelectedMemberIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
   };
 
@@ -483,7 +467,7 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
     return otherTeamMembers.filter(
       (m) =>
         (m.full_name || "").toLowerCase().includes(term) ||
-        (m.email || "").toLowerCase().includes(term)
+        (m.email || "").toLowerCase().includes(term),
     );
   }, [otherTeamMembers, searchTerm]);
 
@@ -512,9 +496,11 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
             className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground-disabled hover:bg-surface-raised rounded transition-colors"
           >
             <span>My Calendars</span>
-            <ChevronDown className={`h-3 w-3 transition-transform ${myCalendarsCollapsed ? "-rotate-90" : ""}`} />
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${myCalendarsCollapsed ? "-rotate-90" : ""}`}
+            />
           </button>
-          
+
           {!myCalendarsCollapsed && user?.id && (
             <div className="pl-1 pt-1">
               {(() => {
@@ -565,7 +551,9 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
             className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground-disabled hover:bg-surface-raised rounded transition-colors"
           >
             <span>Other Calendars</span>
-            <ChevronDown className={`h-3 w-3 transition-transform ${otherCalendarsCollapsed ? "-rotate-90" : ""}`} />
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${otherCalendarsCollapsed ? "-rotate-90" : ""}`}
+            />
           </button>
 
           {!otherCalendarsCollapsed && (
@@ -758,7 +746,8 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-between text-xs text-amber-500">
           <span className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            Your own Calendly calendar is not connected yet. Sync will be disabled for your calendar.
+            Your own Calendly calendar is not connected yet. Sync will be disabled for your
+            calendar.
           </span>
           <button
             onClick={() => setSettingsOpen(true)}
@@ -785,8 +774,8 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
             Connect Your Calendly
           </h3>
           <p className="text-sm text-foreground-muted text-center max-w-sm">
-            Link your Calendly account to see your booked calls here. You'll need your Personal Access
-            Token.
+            Link your Calendly account to see your booked calls here. You'll need your Personal
+            Access Token.
           </p>
           <Button onClick={() => setSettingsOpen(true)} className="gap-2">
             <Settings2 className="h-4 w-4" />
@@ -833,7 +822,8 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <AlertCircle className="h-8 w-8 text-foreground-disabled" />
               <p className="text-sm text-foreground-muted text-center max-w-sm">
-                No events scheduled for the selected team members this week. Make sure calendars are connected.
+                No events scheduled for the selected team members this week. Make sure calendars are
+                connected.
               </p>
               {isOwnCalendarSelected && hasApiKey && (
                 <Button
@@ -920,12 +910,14 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
                     const topOffset = (event.startHour - 8) * 64 + (event.startMinute / 60) * 64;
                     const height = (event.durationMinutes / 60) * 64;
 
-                    const memberColor = event.sales_user_id ? memberColorMap.get(event.sales_user_id) : undefined;
+                    const memberColor = event.sales_user_id
+                      ? memberColorMap.get(event.sales_user_id)
+                      : undefined;
                     const colors = memberColor || EVENT_COLORS[event.type];
 
                     const dayPercent = 100 / 7;
                     const dayLeft = (event.dayOffset / 7) * 100;
-                    
+
                     const widthPercent = dayPercent / colCount;
                     const leftPercent = dayLeft + (colIdx / colCount) * dayPercent;
 
@@ -953,8 +945,11 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
                         </p>
                         {height >= 40 && (
                           <p className="mt-0.5 truncate text-[9px] text-foreground-muted">
-                            {format(new Date(2024, 0, 1, event.startHour, event.startMinute), "h:mm a")} ·{" "}
-                            {event.durationMinutes}min
+                            {format(
+                              new Date(2024, 0, 1, event.startHour, event.startMinute),
+                              "h:mm a",
+                            )}{" "}
+                            · {event.durationMinutes}min
                           </p>
                         )}
                         {height >= 55 && event.rep && (
@@ -1009,7 +1004,7 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
         </div>
         {/* Column 2: Main Area */}
         {calendarMainArea}
-        
+
         {/* Mobile Drawer Sheet */}
         <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
           <SheetContent side="left" className="p-0 w-64 border-r border-border">
@@ -1020,9 +1015,5 @@ export function ScheduleDashboard({ mode = "mock" }: ScheduleDashboardProps) {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-0 h-full w-full">
-      {calendarMainArea}
-    </div>
-  );
+  return <div className="flex flex-col gap-0 h-full w-full">{calendarMainArea}</div>;
 }
