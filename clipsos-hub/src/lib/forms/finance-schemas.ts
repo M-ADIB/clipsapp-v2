@@ -35,6 +35,21 @@ export const recordPaymentSchema = z.object({
 
 export type RecordPaymentValues = z.infer<typeof recordPaymentSchema>;
 
+/** Schema for the operating-cost add/edit dialog. Name + amount required. */
+export const costSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  category: z.string(),
+  amount: z.string().min(1, "Amount is required"),
+  currency: z.string(),
+  isRecurring: z.boolean(),
+  recurrence: z.string(),
+  nextDate: z.string(),
+  credEmail: z.string(),
+  notes: z.string(),
+});
+
+export type CostFormValues = z.infer<typeof costSchema>;
+
 /** Schema for the Stripe payment-link dialog. */
 export const paymentLinkSchema = z.object({
   clientId: z.string().min(1, "Client is required"),
