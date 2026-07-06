@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Mail, Video } from "lucide-react";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { guestGateSchema, type GuestGateValues } from "@/lib/forms/guest-schemas";
 
 interface GuestGateDialogProps {
   onComplete: (info: { name: string; email: string }) => void;
@@ -18,42 +21,24 @@ interface GuestGateDialogProps {
 }
 
 export function GuestGateDialog({ onComplete, videoTitle = "this video" }: GuestGateDialogProps) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<GuestGateValues>({
+    resolver: zodResolver(guestGateSchema),
+    defaultValues: { name: "", email: "" },
+    mode: "onSubmit",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
-
-    if (!trimmedName) {
-      toast.error("Please enter your name");
-      return;
-    }
-
-    if (!trimmedEmail) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    setIsSubmitting(true);
+  const onSubmit = ({ name, email }: GuestGateValues) => {
     try {
-      localStorage.setItem("guest_reviewer_name", trimmedName);
-      localStorage.setItem("guest_reviewer_email", trimmedEmail);
-      toast.success(`Welcome, ${trimmedName}!`);
-      onComplete({ name: trimmedName, email: trimmedEmail });
-    } catch (err) {
+      localStorage.setItem("guest_reviewer_name", name);
+      localStorage.setItem("guest_reviewer_email", email);
+      toast.success(`Welcome, ${name}!`);
+      onComplete({ name, email });
+    } catch {
       toast.error("Failed to save reviewer details");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -80,7 +65,7 @@ export function GuestGateDialog({ onComplete, videoTitle = "this video" }: Guest
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2" noValidate>
           <div className="space-y-1.5">
             <Label
               htmlFor="guest-name"
@@ -97,13 +82,17 @@ export function GuestGateDialog({ onComplete, videoTitle = "this video" }: Guest
                 type="text"
                 placeholder="e.g. John Doe"
                 className="pl-9 h-10 border-border/50 bg-muted/20 focus:bg-background transition-all"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 disabled={isSubmitting}
                 autoFocus
-                required
+                aria-invalid={!!errors.name}
+                {...register("name")}
               />
             </div>
+            {errors.name && (
+              <p className="text-xs text-status-danger" role="alert">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -122,12 +111,16 @@ export function GuestGateDialog({ onComplete, videoTitle = "this video" }: Guest
                 type="email"
                 placeholder="e.g. john@example.com"
                 className="pl-9 h-10 border-border/50 bg-muted/20 focus:bg-background transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
-                required
+                aria-invalid={!!errors.email}
+                {...register("email")}
               />
             </div>
+            {errors.email && (
+              <p className="text-xs text-status-danger" role="alert">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <Button

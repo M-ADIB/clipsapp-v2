@@ -4,16 +4,22 @@
  * Tabs (Review | Up Next | Scheduled | Posted) live in the universal
  * TopNav header via WorkspaceContext — no in-page heading.
  */
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMyClientIds } from "@/hooks/use-clients";
 
 import { useGridRows } from "@/components/grid/core/useGridRows";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
-import { PostingCalendar } from "./PostingCalendar";
+import { formatDate } from "@/lib/format";
+
+// FullCalendar (core + daygrid + timegrid + interaction) is heavy and only
+// needed on the Calendar tab, which is never the default. Defer its chunk
+// until the user actually opens that tab.
+const PostingCalendar = lazy(() =>
+  import("./PostingCalendar").then((m) => ({ default: m.PostingCalendar })),
+);
 
 type Tab = "review" | "next" | "scheduled" | "posted" | "calendar";
 
@@ -26,7 +32,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function PostingQueue() {
-  const { user, tenantId } = useAuth();
+  const { tenantId } = useAuth();
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
   const [tab, setTab] = useState<Tab>("review");
 
@@ -40,18 +46,7 @@ export function PostingQueue() {
     return () => clearHeaderConfig();
   }, [tab, setHeaderConfig, clearHeaderConfig]);
 
-  const { data: clientIds = [] } = useQuery({
-    queryKey: ["client_access", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_access")
-        .select("client_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return (data ?? []).map((r) => r.client_id);
-    },
-  });
+  const { data: clientIds = [] } = useMyClientIds();
 
   const primaryClientId = clientIds[0];
   const scope = useMemo(() => ({ clientId: primaryClientId }), [primaryClientId]);
@@ -83,7 +78,15 @@ export function PostingQueue() {
   return (
     <FullBleed className="flex flex-col h-full overflow-hidden">
       {tab === "calendar" ? (
-        <PostingCalendar embedded={true} active={tab === "calendar"} />
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center px-3 py-5 text-sm text-foreground-muted">
+              Loading calendar…
+            </div>
+          }
+        >
+          <PostingCalendar embedded={true} active={tab === "calendar"} />
+        </Suspense>
       ) : (
         <div className="flex-1 overflow-auto px-3 py-5 md:px-5 md:py-6">
           {isLoading ? (
@@ -163,13 +166,4 @@ function QueueCard({
       ) : null}
     </li>
   );
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }

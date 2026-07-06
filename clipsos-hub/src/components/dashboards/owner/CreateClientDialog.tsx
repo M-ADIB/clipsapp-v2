@@ -13,11 +13,14 @@
  *  - videos_per_month
  *  - description (notes)
  */
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, User, Building2, Mail, Briefcase, Video, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { useCreateClient } from "@/hooks/data";
+import { createClientSchema, type CreateClientValues } from "@/lib/forms/client-schemas";
 import {
   Dialog,
   DialogContent,
@@ -46,20 +49,7 @@ interface CreateClientDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type WorkspaceType = "individual" | "company";
-type AccountStatus = "onboarding" | "active" | "trial";
-
-interface FormData {
-  name: string;
-  email: string;
-  workspace_type: WorkspaceType;
-  account_status: AccountStatus;
-  industry: string;
-  videos_per_month: string;
-  description: string;
-}
-
-const INITIAL_FORM: FormData = {
+const INITIAL_FORM: CreateClientValues = {
   name: "",
   email: "",
   workspace_type: "individual",
@@ -75,55 +65,44 @@ const INITIAL_FORM: FormData = {
 
 export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogProps) {
   const createClient = useCreateClient();
-  const nameRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState<FormData>(INITIAL_FORM);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setFocus,
+    formState: { errors },
+  } = useForm<CreateClientValues>({
+    resolver: zodResolver(createClientSchema),
+    defaultValues: INITIAL_FORM,
+  });
 
   // Auto-focus name field when dialog opens
   useEffect(() => {
     if (open) {
-      setTimeout(() => nameRef.current?.focus(), 100);
+      setTimeout(() => setFocus("name"), 100);
     }
-  }, [open]);
-
-  const resetForm = () => {
-    setForm(INITIAL_FORM);
-    setErrors({});
-  };
+  }, [open, setFocus]);
 
   const handleClose = (open: boolean) => {
-    if (!open) resetForm();
+    if (!open) reset(INITIAL_FORM);
     onOpenChange(open);
   };
 
-  const validate = (): boolean => {
-    const next: Partial<Record<keyof FormData, string>> = {};
-    if (!form.name.trim()) next.name = "Client name is required";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      next.email = "Invalid email address";
-    if (form.videos_per_month && isNaN(Number(form.videos_per_month)))
-      next.videos_per_month = "Must be a number";
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
+  const onSubmit = async (values: CreateClientValues) => {
     try {
       await createClient.mutateAsync({
-        name: form.name.trim(),
-        email: form.email.trim() || null,
-        workspace_type: form.workspace_type,
-        account_status: form.account_status,
-        industry: form.industry.trim() || null,
-        videos_per_month: form.videos_per_month ? Number(form.videos_per_month) : null,
-        description: form.description.trim() || null,
+        name: values.name.trim(),
+        email: values.email.trim() || null,
+        workspace_type: values.workspace_type,
+        account_status: values.account_status,
+        industry: values.industry.trim() || null,
+        videos_per_month: values.videos_per_month ? Number(values.videos_per_month) : null,
+        description: values.description.trim() || null,
       } as any);
 
       toast.success("Client created successfully", {
-        description: `${form.name.trim()} workspace is ready.`,
+        description: `${values.name.trim()} workspace is ready.`,
       });
       handleClose(false);
     } catch (err) {
@@ -131,12 +110,6 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
         description: err instanceof Error ? err.message : "An unexpected error occurred.",
       });
     }
-  };
-
-  const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-    // Clear error on change
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
   return (
@@ -154,7 +127,7 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 pt-2" noValidate>
           {/* ── Row 1: Name + Email ── */}
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Name (required) */}
@@ -167,14 +140,17 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
                 Client Name <span className="text-red-400">*</span>
               </Label>
               <Input
-                ref={nameRef}
                 id="client-name"
                 placeholder="e.g. Acme Corp"
-                value={form.name}
-                onChange={(e) => updateField("name", e.target.value)}
+                aria-invalid={!!errors.name}
                 className={`h-10 bg-surface-input text-sm ${errors.name ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                {...register("name")}
               />
-              {errors.name && <p className="text-[11px] text-red-400">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-[11px] text-red-400" role="alert">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
             {/* Email */}
@@ -190,11 +166,15 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
                 id="client-email"
                 type="email"
                 placeholder="client@example.com"
-                value={form.email}
-                onChange={(e) => updateField("email", e.target.value)}
+                aria-invalid={!!errors.email}
                 className={`h-10 bg-surface-input text-sm ${errors.email ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                {...register("email")}
               />
-              {errors.email && <p className="text-[11px] text-red-400">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-[11px] text-red-400" role="alert">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -206,28 +186,31 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
                 <Building2 className="h-3 w-3" />
                 Workspace Type
               </Label>
-              <Select
-                value={form.workspace_type}
-                onValueChange={(v) => updateField("workspace_type", v as WorkspaceType)}
-              >
-                <SelectTrigger className="h-10 bg-surface-input text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">
-                    <span className="flex items-center gap-2">
-                      <User className="h-3.5 w-3.5 text-foreground-muted" />
-                      Individual
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="company">
-                    <span className="flex items-center gap-2">
-                      <Building2 className="h-3.5 w-3.5 text-foreground-muted" />
-                      Company
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="workspace_type"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="h-10 bg-surface-input text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">
+                        <span className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-foreground-muted" />
+                          Individual
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="company">
+                        <span className="flex items-center gap-2">
+                          <Building2 className="h-3.5 w-3.5 text-foreground-muted" />
+                          Company
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             {/* Account Status */}
@@ -236,19 +219,22 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
                 <Briefcase className="h-3 w-3" />
                 Account Status
               </Label>
-              <Select
-                value={form.account_status}
-                onValueChange={(v) => updateField("account_status", v as AccountStatus)}
-              >
-                <SelectTrigger className="h-10 bg-surface-input text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="onboarding">Onboarding</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="trial">Trial</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name="account_status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="h-10 bg-surface-input text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="onboarding">Onboarding</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="trial">Trial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -266,9 +252,8 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
               <Input
                 id="client-industry"
                 placeholder="e.g. Tech, Healthcare"
-                value={form.industry}
-                onChange={(e) => updateField("industry", e.target.value)}
                 className="h-10 bg-surface-input text-sm"
+                {...register("industry")}
               />
             </div>
 
@@ -286,12 +271,14 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
                 type="number"
                 min={0}
                 placeholder="e.g. 8"
-                value={form.videos_per_month}
-                onChange={(e) => updateField("videos_per_month", e.target.value)}
+                aria-invalid={!!errors.videos_per_month}
                 className={`h-10 bg-surface-input text-sm ${errors.videos_per_month ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+                {...register("videos_per_month")}
               />
               {errors.videos_per_month && (
-                <p className="text-[11px] text-red-400">{errors.videos_per_month}</p>
+                <p className="text-[11px] text-red-400" role="alert">
+                  {errors.videos_per_month.message}
+                </p>
               )}
             </div>
           </div>
@@ -309,9 +296,8 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
               id="client-notes"
               rows={3}
               placeholder="Optional notes about the client…"
-              value={form.description}
-              onChange={(e) => updateField("description", e.target.value)}
               className="w-full rounded-md border border-input bg-surface-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              {...register("description")}
             />
           </div>
 
@@ -325,11 +311,7 @@ export function CreateClientDialog({ open, onOpenChange }: CreateClientDialogPro
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={createClient.isPending || !form.name.trim()}
-              className="min-w-[120px]"
-            >
+            <Button type="submit" disabled={createClient.isPending} className="min-w-[120px]">
               {createClient.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

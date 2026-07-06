@@ -11,7 +11,7 @@
 import { useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "./RichTextEditorLazy";
 import { useUpdateCycleBody, useCycleBody } from "@/hooks/use-studio";
 import type { Json } from "@/integrations/supabase/types";
 

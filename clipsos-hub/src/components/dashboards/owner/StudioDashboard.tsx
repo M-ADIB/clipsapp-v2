@@ -19,9 +19,7 @@ import { ContentTab } from "./studio/ContentTab";
 import { BrainTab } from "./studio/BrainTab";
 import { ResourcesTab } from "./studio/ResourcesTab";
 import { ChevronDown, LayoutList, Search, Check } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useClientList } from "@/hooks/use-clients";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -32,24 +30,12 @@ const TABS = [
 
 export function StudioDashboard() {
   const { headerConfig, setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
-  const { tenantId } = useAuth();
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
 
   const activeTab = headerConfig?.activeTab || "Content";
 
   // Fetch all clients for the switcher dropdown
-  const { data: allClients } = useQuery({
-    queryKey: ["studio-clients-list", tenantId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("clients")
-        .select("id, name, account_status")
-        .eq("tenant_id", tenantId!)
-        .order("name");
-      return data ?? [];
-    },
-    enabled: !!tenantId,
-  });
+  const { data: allClients } = useClientList();
 
   // Selected client data (derived from allClients to avoid extra query)
   const selectedClient = allClients?.find((c) => c.id === selectedClientId);

@@ -10,13 +10,11 @@
  * Tabs state is kept alive and fully synchronized with the `tab` URL search parameter.
  */
 import { useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMyClientIds } from "@/hooks/use-clients";
 import { useNavigate } from "@tanstack/react-router";
 import { Film, Table, FolderOpen } from "lucide-react";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { Route } from "@/routes/_authenticated/client/videos";
 import { cn } from "@/lib/utils";
@@ -43,25 +41,13 @@ const TAB_ITEMS = [
 ];
 
 export function ClientMyVideos() {
-  const { user } = useAuth();
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
   const navigate = useNavigate({ from: Route.fullPath });
 
   // Read search params (?tab=, ?status=, ?projectId=)
   const { tab = "feed", status: statusSlug, projectId } = Route.useSearch();
 
-  const { data: clientIds = [], isLoading } = useQuery({
-    queryKey: ["client_access", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_access")
-        .select("client_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return (data ?? []).map((r) => r.client_id);
-    },
-  });
+  const { data: clientIds = [], isLoading } = useMyClientIds();
 
   const clientId = clientIds[0];
 

@@ -4,7 +4,11 @@
  */
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
+
+import { costSchema, type CostFormValues } from "@/lib/forms/finance-schemas";
 
 import {
   useOperatingCosts,
@@ -56,7 +60,7 @@ type CostFormData = {
   notes: string | null;
 };
 
-function CostDialog({
+export function CostDialog({
   open,
   onClose,
   initial,
@@ -69,30 +73,43 @@ function CostDialog({
   onSave: (data: CostFormData) => void;
   saving: boolean;
 }) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [category, setCategory] = useState(initial?.category ?? "subscription");
-  const [amount, setAmount] = useState(String(initial?.amount ?? ""));
-  const [currency, setCurrency] = useState(initial?.currency ?? "AED");
-  const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
-  const [recurrence, setRecurrence] = useState(initial?.recurrence_interval ?? "monthly");
-  const [nextDate, setNextDate] = useState(initial?.next_payment_date ?? "");
-  const [credEmail, setCredEmail] = useState(initial?.credentials_email ?? "");
-  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    formState: { errors },
+  } = useForm<CostFormValues>({
+    resolver: zodResolver(costSchema),
+    defaultValues: {
+      name: initial?.name ?? "",
+      category: initial?.category ?? "subscription",
+      amount: initial?.amount != null ? String(initial.amount) : "",
+      currency: initial?.currency ?? "AED",
+      isRecurring: initial?.is_recurring ?? true,
+      recurrence: initial?.recurrence_interval ?? "monthly",
+      nextDate: initial?.next_payment_date ?? "",
+      credEmail: initial?.credentials_email ?? "",
+      notes: initial?.notes ?? "",
+    },
+  });
 
-  const handleSubmit = () => {
+  const isRecurring = watch("isRecurring");
+
+  const onSubmit = (values: CostFormValues) => {
     onSave({
       id: initial?.id,
-      name,
-      category,
-      amount: Number(amount) || 0,
-      currency,
+      name: values.name,
+      category: values.category,
+      amount: Number(values.amount) || 0,
+      currency: values.currency,
       is_active: initial?.is_active ?? true,
-      is_recurring: isRecurring,
-      recurrence_interval: isRecurring ? recurrence : "one-time",
-      next_payment_date: nextDate || null,
-      credentials_email: credEmail || null,
+      is_recurring: values.isRecurring,
+      recurrence_interval: values.isRecurring ? values.recurrence : "one-time",
+      next_payment_date: values.nextDate || null,
+      credentials_email: values.credEmail || null,
       credentials_password_hint: null,
-      notes: notes || null,
+      notes: values.notes || null,
     });
   };
 
@@ -102,101 +119,131 @@ function CostDialog({
         <DialogHeader>
           <DialogTitle>{initial?.id ? "Edit Cost" : "Add Cost"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Cap Cut"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-4 py-2">
             <div>
-              <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Amount</Label>
+              <Label htmlFor="cost-name">Name</Label>
               <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
+                id="cost-name"
+                placeholder="e.g. Cap Cut"
+                aria-invalid={!!errors.name}
+                {...register("name")}
               />
+              {errors.name && (
+                <p className="text-xs text-status-danger" role="alert">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Category</Label>
+                <Controller
+                  control={control}
+                  name="category"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((c) => (
+                          <SelectItem key={c} value={c}>
+                            {c.charAt(0).toUpperCase() + c.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cost-amount">Amount</Label>
+                <Input
+                  id="cost-amount"
+                  type="number"
+                  placeholder="0.00"
+                  aria-invalid={!!errors.amount}
+                  {...register("amount")}
+                />
+                {errors.amount && (
+                  <p className="text-xs text-status-danger" role="alert">
+                    {errors.amount.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Currency</Label>
+                <Controller
+                  control={control}
+                  name="currency"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="AED">AED</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cost-next">Next Payment</Label>
+                <Input id="cost-next" type="date" {...register("nextDate")} />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Controller
+                control={control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+              <Label>Recurring</Label>
+              {isRecurring && (
+                <Controller
+                  control={control}
+                  name="recurrence"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
+            </div>
             <div>
-              <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="AED">AED</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="cost-cred">Credentials Email (optional)</Label>
+              <Input id="cost-cred" placeholder="admin@example.com" {...register("credEmail")} />
             </div>
             <div>
-              <Label>Next Payment</Label>
-              <Input type="date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} />
+              <Label htmlFor="cost-notes">Notes</Label>
+              <Input id="cost-notes" placeholder="Optional notes…" {...register("notes")} />
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
-            <Label>Recurring</Label>
-            {isRecurring && (
-              <Select value={recurrence} onValueChange={setRecurrence}>
-                <SelectTrigger className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-          <div>
-            <Label>Credentials Email (optional)</Label>
-            <Input
-              value={credEmail}
-              onChange={(e) => setCredEmail(e.target.value)}
-              placeholder="admin@example.com"
-            />
-          </div>
-          <div>
-            <Label>Notes</Label>
-            <Input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes…"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving || !name || !amount}>
-            {saving ? "Saving…" : initial?.id ? "Update" : "Add Cost"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : initial?.id ? "Update" : "Add Cost"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

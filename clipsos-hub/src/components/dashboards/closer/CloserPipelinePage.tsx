@@ -9,7 +9,7 @@
  */
 import { useEffect } from "react";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { PipelineDashboard } from "@/components/dashboards/owner/PipelineDashboard";
+import { PipelineDashboard } from "@/components/dashboards/shared/PipelineDashboard";
 
 export function CloserPipelinePage() {
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();

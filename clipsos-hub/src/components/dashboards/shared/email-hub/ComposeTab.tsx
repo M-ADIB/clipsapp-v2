@@ -13,9 +13,8 @@
  * to the Editor tab with a new draft.
  */
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { renderTemplate } from "@/lib/email/renderTemplate";
+import { useSendCampaign } from "@/hooks/use-email-campaign";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,13 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Send, Clock, Save, Loader2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-
-interface Recipient {
-  email: string;
-  name: string;
-}
-
 interface ComposeState {
   subject: string;
   headline: string;
@@ -82,8 +74,7 @@ const EMPTY: ComposeState = {
 };
 
 export function ComposeTab({ onSaveAsTemplate, initialData }: ComposeTabProps) {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
+  const sendCampaign = useSendCampaign();
 
   const [state, setState] = useState<ComposeState>(EMPTY);
   const [isSending, setIsSending] = useState(false);
@@ -116,63 +107,7 @@ export function ComposeTab({ onSaveAsTemplate, initialData }: ComposeTabProps) {
     return html;
   }, [state]);
 
-  async function fetchRecipients(): Promise<Recipient[]> {
-    if (!tenantId) return [];
-    const recipients: Recipient[] = [];
-    const seen = new Set<string>();
-    const add = (email: string | null, name: string | null) => {
-      if (!email) return;
-      const k = email.toLowerCase();
-      if (seen.has(k)) return;
-      seen.add(k);
-      recipients.push({ email, name: name ?? "" });
-    };
-
-    if (state.audiences.includes("leads")) {
-      const { data } = await supabase
-        .from("leads")
-        .select("email, first_name")
-        .eq("tenant_id", tenantId);
-      data?.forEach((r) => add(r.email, r.first_name));
-    }
-    if (state.audiences.includes("active_clients")) {
-      const { data } = await supabase
-        .from("clients")
-        .select("email, name")
-        .eq("tenant_id", tenantId)
-        .eq("account_status", "active");
-      data?.forEach((r) => add(r.email, r.name));
-    }
-    if (state.audiences.includes("all_clients")) {
-      const { data } = await supabase
-        .from("clients")
-        .select("email, name")
-        .eq("tenant_id", tenantId);
-      data?.forEach((r) => add(r.email, r.name));
-    }
-    if (state.audiences.includes("team")) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("email, full_name")
-        .eq("tenant_id", tenantId);
-      data?.forEach((r) => add(r.email, r.full_name));
-    }
-    if (state.customList.trim()) {
-      state.customList
-        .split(/[,\n]+/)
-        .map((e) => e.trim())
-        .filter(Boolean)
-        .forEach((email) => add(email, ""));
-    }
-
-    return recipients;
-  }
-
   async function send(scheduledFor?: Date) {
-    if (!tenantId) {
-      toast.error("Tenant not loaded — try again.");
-      return;
-    }
     if (!state.subject.trim()) {
       toast.error("Subject is required");
       return;
@@ -188,106 +123,11 @@ export function ComposeTab({ onSaveAsTemplate, initialData }: ComposeTabProps) {
 
     setIsSending(true);
     try {
-      const recipients = await fetchRecipients();
-      if (recipients.length === 0) {
-        toast.error("No recipients found for the selected audiences");
-        return;
-      }
-
-      // Snapshot the rendered HTML for the first recipient (history preview)
-      const firstName = recipients[0]?.name?.split(" ")[0] || "there";
-      const { html: renderedHtml } = renderTemplate(
-        {
-          edit_mode: "visual",
-          subject: state.subject,
-          headline: state.headline,
-          body: state.body,
-          cta_text: state.ctaText,
-          cta_url: state.ctaUrl,
-          preview_text: state.preview_text,
-          body_html: "",
-        },
-        { client_name: firstName },
-      );
-
-      // 1) Campaign row
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: campaign, error: campErr } = await (supabase as any)
-        .from("email_campaigns")
-        .insert({
-          tenant_id: tenantId,
-          subject: state.subject,
-          headline: state.headline || null,
-          body: state.body,
-          cta_text: state.ctaText || null,
-          cta_url: state.ctaUrl || null,
-          audience: state.audiences.join(", ") + (state.customList.trim() ? ", custom" : ""),
-          recipient_count: recipients.length,
-          status: scheduledFor ? "scheduled" : "sent",
-          sent_at: scheduledFor ? null : new Date().toISOString(),
-          scheduled_for: scheduledFor ? scheduledFor.toISOString() : null,
-          rendered_html: renderedHtml,
-          created_by: user?.id ?? null,
-        })
-        .select("id")
-        .single();
-      if (campErr) throw campErr;
-
-      // 2) Recipients
-      const recRows = recipients.map((r) => ({
-        tenant_id: tenantId,
-        campaign_id: campaign!.id,
-        email: r.email,
-        name: r.name || null,
-        status: "queued",
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: recErr } = await (supabase as any)
-        .from("email_campaign_recipients")
-        .insert(recRows);
-      if (recErr) throw recErr;
-
-      // 3) Queue entries (one per recipient, individually rendered)
-      const queueRows = recipients.map((r) => {
-        const fname = r.name?.split(" ")[0] || "";
-        const { html, subject } = renderTemplate(
-          {
-            edit_mode: "visual",
-            subject: state.subject,
-            headline: state.headline,
-            body: state.body,
-            cta_text: state.ctaText,
-            cta_url: state.ctaUrl,
-            preview_text: state.preview_text,
-            body_html: "",
-          },
-          { client_name: fname },
-        );
-        return {
-          tenant_id: tenantId,
-          to_email: r.email,
-          to_name: r.name || null,
-          subject,
-          body_html: html,
-          status: "pending",
-          metadata: { campaign_id: campaign!.id },
-        };
-      });
-
-      // Insert in batches of 100
-      for (let i = 0; i < queueRows.length; i += 100) {
-        const batch = queueRows.slice(i, i + 100);
-        const { error } = await supabase.from("email_queue").insert(batch);
-        if (error) throw error;
-      }
-
-      qc.invalidateQueries({ queryKey: ["email-campaigns", tenantId] });
-      qc.invalidateQueries({ queryKey: ["email-campaigns-scheduled", tenantId] });
-
+      const count = await sendCampaign.mutateAsync({ ...state, scheduledFor });
       toast.success(
         scheduledFor
-          ? `Campaign scheduled for ${recipients.length} recipients`
-          : `Campaign sent to ${recipients.length} recipients`,
+          ? `Campaign scheduled for ${count} recipients`
+          : `Campaign sent to ${count} recipients`,
       );
       setState(EMPTY);
     } catch (e) {

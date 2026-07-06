@@ -36,6 +36,8 @@ import {
 import { ChatReactionPills, ChatReactionPicker } from "./ChatReactionBar";
 import { MentionRenderer } from "@/components/mentions";
 import type { ChatMode } from "./ChatLayout";
+import { formatBytes } from "@/lib/format";
+const formatFileSize = formatBytes;
 
 interface MessageSender {
   id: string;
@@ -105,13 +107,6 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function formatFileSize(bytes: number | null): string {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // ── Voice Note Player ─────────────────────────────────────────────────────

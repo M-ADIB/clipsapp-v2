@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useTenantSettings } from "@/hooks/use-tenant-settings";
+import { slackSettingsSchema, type SlackSettingsValues } from "@/lib/forms/integration-schemas";
 import {
   Settings,
   MessageSquare,
@@ -30,23 +33,28 @@ interface SlackSettingsDialogProps {
 }
 
 export function SlackSettingsDialog({ open, onOpenChange }: SlackSettingsDialogProps) {
-  const { settings, isLoading, isUpdating, updateSettings } = useTenantSettings();
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const { settings, isUpdating, updateSettings } = useTenantSettings();
   const [showUrl, setShowUrl] = useState(false);
+
+  const { register, handleSubmit, control, reset } = useForm<SlackSettingsValues>({
+    resolver: zodResolver(slackSettingsSchema),
+    defaultValues: { webhookUrl: "", notificationsEnabled: false },
+  });
 
   useEffect(() => {
     if (settings) {
-      setWebhookUrl(settings.slack_webhook_url || "");
-      setNotificationsEnabled(!!settings.slack_notifications_enabled);
+      reset({
+        webhookUrl: settings.slack_webhook_url || "",
+        notificationsEnabled: !!settings.slack_notifications_enabled,
+      });
     }
-  }, [settings]);
+  }, [settings, reset]);
 
-  const handleSave = async () => {
+  const onSubmit = async (values: SlackSettingsValues) => {
     try {
       await updateSettings({
-        slack_webhook_url: webhookUrl.trim(),
-        slack_notifications_enabled: notificationsEnabled,
+        slack_webhook_url: values.webhookUrl.trim(),
+        slack_notifications_enabled: values.notificationsEnabled,
       });
       toast.success("Slack integration settings saved!");
       onOpenChange(false);
@@ -71,104 +79,116 @@ export function SlackSettingsDialog({ open, onOpenChange }: SlackSettingsDialogP
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
-          {/* Status info */}
-          <div
-            className="flex items-center gap-3 p-3.5 rounded-lg border text-sm"
-            style={{
-              background: hasConfig ? "rgba(16,185,129,0.05)" : "rgba(245,158,11,0.05)",
-              borderColor: hasConfig ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
-            }}
-          >
-            {hasConfig ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-            )}
-            <div className="text-foreground">
-              {hasConfig ? (
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                  Slack Connected.
-                </span>
-              ) : (
-                <span className="font-medium text-amber-600 dark:text-amber-400">
-                  Not Connected.
-                </span>
-              )}{" "}
-              Configure Webhook URL below to pipe notifications.
-            </div>
-          </div>
-
-          {/* Webhook URL */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="slack-webhook"
-              className="flex items-center gap-1.5 text-foreground-strong"
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col" noValidate>
+          <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
+            {/* Status info */}
+            <div
+              className="flex items-center gap-3 p-3.5 rounded-lg border text-sm"
+              style={{
+                background: hasConfig ? "rgba(16,185,129,0.05)" : "rgba(245,158,11,0.05)",
+                borderColor: hasConfig ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+              }}
             >
-              Incoming Webhook URL
-            </Label>
-            <div className="relative">
-              <Input
-                id="slack-webhook"
-                type={showUrl ? "text" : "password"}
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://hooks.slack.com/services/..."
-                className="font-mono text-xs pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowUrl(!showUrl)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-foreground-muted hover:text-foreground transition-colors"
-              >
-                {showUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+              {hasConfig ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+              )}
+              <div className="text-foreground">
+                {hasConfig ? (
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    Slack Connected.
+                  </span>
+                ) : (
+                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                    Not Connected.
+                  </span>
+                )}{" "}
+                Configure Webhook URL below to pipe notifications.
+              </div>
             </div>
-            <p className="text-[11px] text-foreground-muted leading-relaxed">
-              Create a Slack App and enable Incoming Webhooks in your Slack workspace. Get a webhook
-              URL from{" "}
-              <a
-                href="https://api.slack.com/messaging/webhooks"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-0.5"
-              >
-                Slack API Docs
-                <ExternalLink className="h-2.5 w-2.5" />
-              </a>
-            </p>
-          </div>
 
-          {/* Notifications Toggle */}
-          <div className="flex items-center justify-between p-3.5 bg-surface-raised rounded-lg border border-border">
-            <div className="space-y-0.5 pr-4">
+            {/* Webhook URL */}
+            <div className="space-y-1.5">
               <Label
-                htmlFor="slack-notify"
-                className="text-sm font-semibold text-foreground-strong"
+                htmlFor="slack-webhook"
+                className="flex items-center gap-1.5 text-foreground-strong"
               >
-                Enable Notifications
+                Incoming Webhook URL
               </Label>
-              <p className="text-xs text-foreground-muted">
-                Post comments, approvals, and assignments to Slack.
+              <div className="relative">
+                <Input
+                  id="slack-webhook"
+                  type={showUrl ? "text" : "password"}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="font-mono text-xs pr-10"
+                  {...register("webhookUrl")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowUrl(!showUrl)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  {showUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-foreground-muted leading-relaxed">
+                Create a Slack App and enable Incoming Webhooks in your Slack workspace. Get a
+                webhook URL from{" "}
+                <a
+                  href="https://api.slack.com/messaging/webhooks"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-0.5"
+                >
+                  Slack API Docs
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
               </p>
             </div>
-            <Switch
-              id="slack-notify"
-              checked={notificationsEnabled}
-              onCheckedChange={setNotificationsEnabled}
-            />
-          </div>
-        </div>
 
-        <DialogFooter className="pt-4 border-t border-border mt-auto flex gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isUpdating}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isUpdating} className="gap-2">
-            {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isUpdating ? "Saving..." : "Save Settings"}
-          </Button>
-        </DialogFooter>
+            {/* Notifications Toggle */}
+            <div className="flex items-center justify-between p-3.5 bg-surface-raised rounded-lg border border-border">
+              <div className="space-y-0.5 pr-4">
+                <Label
+                  htmlFor="slack-notify"
+                  className="text-sm font-semibold text-foreground-strong"
+                >
+                  Enable Notifications
+                </Label>
+                <p className="text-xs text-foreground-muted">
+                  Post comments, approvals, and assignments to Slack.
+                </p>
+              </div>
+              <Controller
+                control={control}
+                name="notificationsEnabled"
+                render={({ field }) => (
+                  <Switch
+                    id="slack-notify"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4 border-t border-border mt-auto flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isUpdating} className="gap-2">
+              {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isUpdating ? "Saving..." : "Save Settings"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

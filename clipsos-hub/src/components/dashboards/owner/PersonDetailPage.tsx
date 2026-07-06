@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { useCrmPerson, useUpdateCrmPerson, usePersonDeals } from "@/hooks/data";
 import { useNavigate } from "@tanstack/react-router";
+import { formatDate, formatDateTime } from "@/lib/format";
 import {
   ArrowLeft,
   Building2,
@@ -43,26 +44,6 @@ function getInitials(name: string | null): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function sourceBadgeColor(source: string | null): string {

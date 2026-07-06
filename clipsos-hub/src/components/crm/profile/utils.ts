@@ -1,32 +1,17 @@
+import { formatDate, formatDateTime } from "@/lib/format";
 /**
  * CRM Profile — Shared utility helpers (formatting, badges, initials).
  */
+
+// Re-exported so existing `import { formatDate, formatDateTime } from "../utils"`
+// call sites keep working now that these live in the shared format lib.
+export { formatDate, formatDateTime };
 
 export function getInitials(name: string | null): string {
   if (!name) return "?";
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 export function timeAgo(iso: string): string {

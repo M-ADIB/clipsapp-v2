@@ -2,8 +2,10 @@
  * RecordPaymentDialog — Manual payment recording (bank transfer, cash, etc.)
  * Inserts to finance_transactions via the stripe-actions Edge Function or updates them directly.
  */
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { format } from "date-fns";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +30,13 @@ import { useRecordPayment } from "@/hooks/use-stripe-actions";
 import { useUpdateFinanceTransaction } from "@/hooks/use-finance";
 import { toast } from "sonner";
 
+import {
+  PAYMENT_CATEGORIES,
+  PAYMENT_METHODS,
+  recordPaymentSchema,
+  type RecordPaymentValues,
+} from "@/lib/forms/finance-schemas";
+
 interface RecordPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,23 +53,6 @@ interface RecordPaymentDialogProps {
   } | null;
 }
 
-const PAYMENT_METHODS = [
-  { value: "bank_transfer", label: "Bank Transfer" },
-  { value: "cash", label: "Cash" },
-  { value: "cheque", label: "Cheque" },
-  { value: "wire", label: "Wire Transfer" },
-  { value: "other", label: "Other" },
-];
-
-const CATEGORIES = [
-  { value: "service_fee", label: "Service Fee" },
-  { value: "retainer", label: "Retainer" },
-  { value: "project_fee", label: "Project Fee" },
-  { value: "setup_fee", label: "Setup Fee" },
-  { value: "bonus", label: "Bonus" },
-  { value: "other", label: "Other" },
-];
-
 export function RecordPaymentDialog({
   open,
   onOpenChange,
@@ -71,105 +63,94 @@ export function RecordPaymentDialog({
   const recordPayment = useRecordPayment();
   const updateTransaction = useUpdateFinanceTransaction();
 
-  const [clientId, setClientId] = useState(preselectedClientId ?? "");
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
-  const [category, setCategory] = useState("service_fee");
-  const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [notes, setNotes] = useState("");
+  const defaults = (): RecordPaymentValues => ({
+    clientId: preselectedClientId ?? "",
+    amount: "",
+    paymentMethod: "bank_transfer",
+    category: "service_fee",
+    paymentDate: format(new Date(), "yyyy-MM-dd"),
+    notes: "",
+  });
 
-  const reset = () => {
-    setClientId(preselectedClientId ?? "");
-    setAmount("");
-    setPaymentMethod("bank_transfer");
-    setCategory("service_fee");
-    setPaymentDate(format(new Date(), "yyyy-MM-dd"));
-    setNotes("");
-  };
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<RecordPaymentValues>({
+    resolver: zodResolver(recordPaymentSchema),
+    defaultValues: defaults(),
+  });
 
   useEffect(() => {
-    if (open) {
-      if (editTransaction) {
-        setClientId(editTransaction.client_id || "");
-        setAmount(String(editTransaction.amount) || "");
-        setPaymentMethod(editTransaction.payment_method || "bank_transfer");
-        setCategory(editTransaction.category || "service_fee");
-        setPaymentDate(
-          editTransaction.payment_date
-            ? editTransaction.payment_date.split("T")[0]
-            : format(new Date(), "yyyy-MM-dd"),
-        );
-        setNotes(editTransaction.notes || "");
-      } else {
-        reset();
-      }
+    if (!open) return;
+    if (editTransaction) {
+      reset({
+        clientId: editTransaction.client_id || "",
+        amount: String(editTransaction.amount) || "",
+        paymentMethod: editTransaction.payment_method || "bank_transfer",
+        category: editTransaction.category || "service_fee",
+        paymentDate: editTransaction.payment_date
+          ? editTransaction.payment_date.split("T")[0]
+          : format(new Date(), "yyyy-MM-dd"),
+        notes: editTransaction.notes || "",
+      });
+    } else {
+      reset(defaults());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editTransaction]);
 
-  const handleSubmit = () => {
-    if (!clientId || !amount) {
-      toast.error("Client and amount are required");
-      return;
-    }
+  const isSaving = recordPayment.isPending || updateTransaction.isPending;
 
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-
-    const isPending = recordPayment.isPending || updateTransaction.isPending;
-    if (isPending) return;
+  const onSubmit = (values: RecordPaymentValues) => {
+    if (isSaving) return;
+    const numAmount = parseFloat(values.amount);
 
     if (editTransaction) {
       updateTransaction.mutate(
         {
           id: editTransaction.id,
-          client_id: clientId,
+          client_id: values.clientId,
           amount: numAmount,
           currency: editTransaction.currency || "AED",
-          category,
-          payment_date: paymentDate,
-          payment_method: paymentMethod,
-          notes: notes || undefined,
+          category: values.category,
+          payment_date: values.paymentDate,
+          payment_method: values.paymentMethod,
+          notes: values.notes || undefined,
         },
         {
           onSuccess: () => {
             toast.success("Payment details updated successfully");
             onOpenChange(false);
           },
-          onError: (err) => {
-            toast.error(`Failed to update: ${err.message}`);
-          },
+          onError: (err) => toast.error(`Failed to update: ${err.message}`),
         },
       );
     } else {
       recordPayment.mutate(
         {
-          client_id: clientId,
+          client_id: values.clientId,
           amount: numAmount,
           currency: "AED",
           transaction_type: "income",
-          category,
-          payment_date: paymentDate,
-          payment_method: paymentMethod,
-          notes: notes || undefined,
+          category: values.category,
+          payment_date: values.paymentDate,
+          payment_method: values.paymentMethod,
+          notes: values.notes || undefined,
         },
         {
           onSuccess: () => {
             toast.success("Payment recorded successfully");
-            reset();
+            reset(defaults());
             onOpenChange(false);
           },
-          onError: (err) => {
-            toast.error(`Failed to record: ${err.message}`);
-          },
+          onError: (err) => toast.error(`Failed to record: ${err.message}`),
         },
       );
     }
   };
-
-  const isSaving = recordPayment.isPending || updateTransaction.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -183,104 +164,137 @@ export function RecordPaymentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Client */}
-          <div className="space-y-1.5">
-            <Label htmlFor="rp-client">Client</Label>
-            <Select value={clientId} onValueChange={setClientId} disabled={!!editTransaction}>
-              <SelectTrigger id="rp-client">
-                <SelectValue placeholder="Select client…" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Amount */}
-          <div className="space-y-1.5">
-            <Label htmlFor="rp-amount">Amount (AED)</Label>
-            <Input
-              id="rp-amount"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="5,000.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-
-          {/* Two columns: method + category */}
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-4 py-2">
+            {/* Client */}
             <div className="space-y-1.5">
-              <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="rp-client">Client</Label>
+              <Controller
+                control={control}
+                name="clientId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={!!editTransaction}
+                  >
+                    <SelectTrigger id="rp-client" aria-invalid={!!errors.clientId}>
+                      <SelectValue placeholder="Select client…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.clientId && (
+                <p className="text-xs text-status-danger" role="alert">
+                  {errors.clientId.message}
+                </p>
+              )}
             </div>
+
+            {/* Amount */}
             <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="rp-amount">Amount (AED)</Label>
+              <Input
+                id="rp-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="5,000.00"
+                aria-invalid={!!errors.amount}
+                {...register("amount")}
+              />
+              {errors.amount && (
+                <p className="text-xs text-status-danger" role="alert">
+                  {errors.amount.message}
+                </p>
+              )}
+            </div>
+
+            {/* Two columns: method + category */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Payment Method</Label>
+                <Controller
+                  control={control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>
+                            {m.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Controller
+                  control={control}
+                  name="category"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_CATEGORIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-1.5">
+              <Label htmlFor="rp-date">Payment Date</Label>
+              <Input id="rp-date" type="date" {...register("paymentDate")} />
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label htmlFor="rp-notes">Notes (optional)</Label>
+              <Textarea
+                id="rp-notes"
+                placeholder="Invoice #, reference, etc."
+                rows={2}
+                {...register("notes")}
+              />
             </div>
           </div>
 
-          {/* Date */}
-          <div className="space-y-1.5">
-            <Label htmlFor="rp-date">Payment Date</Label>
-            <Input
-              id="rp-date"
-              type="date"
-              value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
-            />
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="rp-notes">Notes (optional)</Label>
-            <Textarea
-              id="rp-notes"
-              placeholder="Invoice #, reference, etc."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSaving || !clientId || !amount}>
-            {isSaving ? "Saving…" : editTransaction ? "Save Changes" : "Record Payment"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving…" : editTransaction ? "Save Changes" : "Record Payment"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

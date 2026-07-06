@@ -9,6 +9,7 @@
  */
 import { useMemo } from "react";
 import { useClientFinance } from "@/hooks/data";
+import { formatCurrency, formatDate } from "@/lib/format";
 import {
   Loader2,
   TrendingUp,
@@ -33,23 +34,6 @@ const PAYMENT_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   failed: { bg: "rgba(147,0,10,0.2)", text: "#FFB4AB" },
   refunded: { bg: "rgba(89,168,212,0.2)", text: "#59A8D4" },
 };
-
-function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -329,7 +313,7 @@ export function SalesTab({ clientId }: SalesTabProps) {
 
                       <div className="flex items-center gap-6">
                         <span className="text-sm font-bold text-[#E5E2E3]">
-                          {formatCurrency(Number(tx.amount), tx.currency ?? "USD")}
+                          {formatCurrency(Number(tx.amount), tx.currency ?? "AED")}
                         </span>
                         <ChevronRight className="h-3 w-3 text-[rgba(229,226,227,0.4)]" />
                       </div>

@@ -41,6 +41,48 @@ export function useClients() {
   });
 }
 
+/**
+ * Lightweight client list (id, name, account_status) for switchers/dropdowns.
+ * Includes archived clients (unlike useClients) — matches the studio switcher's
+ * previous inline query.
+ */
+export function useClientList() {
+  const { tenantId } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.clients.list(tenantId!, { fields: "switcher" }),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, name, account_status")
+        .eq("tenant_id", tenantId!)
+        .order("name");
+      return data ?? [];
+    },
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Client ids the current user has access to (via client_access). Used by the
+ * client-role pages to resolve "my" client. Shared by ClientMyVideos +
+ * PostingQueue (previously duplicated inline queries).
+ */
+export function useMyClientIds() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["client_access", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_access")
+        .select("client_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.client_id);
+    },
+  });
+}
+
 // ─── Single client detail (by UUID) ─────────────────────────────────────────
 
 export function useClient(clientId: string | undefined) {
@@ -536,10 +578,12 @@ export function useClientTeamAssignments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_team_assignments")
-        .select(`
+        .select(
+          `
           *,
           profile:profiles!client_team_assignments_user_id_fkey(id, full_name, avatar_url)
-        `)
+        `,
+        )
         .eq("tenant_id", tenantId!);
 
       if (error) throw error;
@@ -593,4 +637,3 @@ export function useUnassignTeamMember() {
     },
   });
 }
-

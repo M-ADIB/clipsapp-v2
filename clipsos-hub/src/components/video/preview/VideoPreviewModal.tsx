@@ -59,7 +59,7 @@ import { useQueueNavigation } from "./hooks/use-queue-navigation";
 
 export type VideoPreviewMode = "preview" | "review" | "guest";
 
-interface VideoPreviewModalProps {
+export interface VideoPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   videoId: string | null;

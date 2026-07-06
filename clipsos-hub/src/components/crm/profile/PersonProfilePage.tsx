@@ -14,7 +14,7 @@ import { FullBleed } from "@/components/app-shell/FullBleed";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  useCrmPersonBySlug,
+  useCrmPersonById,
   useUpdateCrmPerson,
   usePersonDeals,
   usePersonCalendlyEvents,
@@ -52,7 +52,7 @@ export function PersonProfilePage({ personSlug, embedded }: PersonProfilePagePro
   const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
 
   // ── Core data ──
-  const { data: person, isLoading } = useCrmPersonBySlug(personSlug);
+  const { data: person, isLoading } = useCrmPersonById(personSlug);
   const updatePerson = useUpdateCrmPerson();
 
   const personId = person?.id;

@@ -26,6 +26,7 @@ import { DashboardFilterPopover } from "@/components/dashboard/DashboardFilterPo
 import { DashboardSortPopover } from "@/components/dashboard/DashboardSortPopover";
 import { StatusBadge } from "@/components/dashboard";
 import { useProjects, useClients } from "@/hooks/data";
+import { formatDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -71,13 +72,6 @@ const COLUMNS: DashboardColumn[] = [
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 function formatCadence(cadence: string | null | undefined): string {
   if (!cadence) return "—";

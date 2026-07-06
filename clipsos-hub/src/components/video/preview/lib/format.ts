@@ -78,14 +78,6 @@ export function formatTime(
 
 // ─── Other formatters (unchanged) ──────────────────────────────────
 
-export function formatFileSize(bytes: number | null | undefined): string {
-  if (!bytes || bytes <= 0) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
-}
-
 export function formatTimeAgo(timestamp: string | null | undefined): string {
   if (!timestamp) return "Unknown";
   const diffSec = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);

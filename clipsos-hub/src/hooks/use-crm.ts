@@ -88,21 +88,23 @@ export function useCrmPerson(personId: string | undefined) {
   });
 }
 
-export function useCrmPersonBySlug(slug: string | undefined) {
+// crm_people has no `slug` column (identified by `id`), so person routing uses
+// the id. The route param is still named personSlug but carries the id value.
+export function useCrmPersonById(personId: string | undefined) {
   const { tenantId } = useAuth();
   return useQuery({
-    queryKey: [...queryKeys.crm.people.all(tenantId!), "bySlug", slug],
+    queryKey: [...queryKeys.crm.people.all(tenantId!), "byId", personId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("crm_people")
         .select("*")
-        .eq("slug", slug!)
+        .eq("id", personId!)
         .eq("tenant_id", tenantId!)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!tenantId && !!slug,
+    enabled: !!tenantId && !!personId,
   });
 }
 

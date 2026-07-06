@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/app-shell/AppShell";
-import { homeForRole } from "@/lib/role-routes";
+import { resolveRoleRedirect } from "@/lib/role-routes";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -48,36 +48,26 @@ function AuthenticatedLayout() {
     }
   }, [auth.isLoading, auth.isAuthenticated, location.pathname, navigate]);
 
-  // Gate: enforce role-aware routing (prevent cross-role URL navigation)
-  useEffect(() => {
-    if (!auth.isLoading && auth.isAuthenticated && auth.role) {
-      const path = location.pathname;
-      
-      // Determine what role the route is for based on the URL path prefix
-      let routeRole: string | null = null;
-      if (path.startsWith("/owner")) routeRole = "owner";
-      else if (path.startsWith("/manager")) routeRole = "manager";
-      else if (path.startsWith("/senior-editor")) routeRole = "senior_editor";
-      else if (path.startsWith("/content-creator")) routeRole = "content_creator";
-      else if (path.startsWith("/editor")) routeRole = "editor";
-      else if (path.startsWith("/moderator")) routeRole = "moderator";
-      else if (path.startsWith("/closer")) routeRole = "closer";
-      else if (path.startsWith("/client")) routeRole = "client";
-      else if (path.startsWith("/platform")) routeRole = "platform";
+  // Gate: enforce role-aware routing (prevent cross-role URL navigation).
+  // Decision logic lives in the pure, unit-tested `resolveRoleRedirect`.
+  // Computed during render so we can gate the <Outlet/> below on it — that
+  // stops a cross-role child component from mounting for a frame before the
+  // redirect fires (uses the same resolved auth data, so no lockout risk).
+  const roleRedirect =
+    !auth.isLoading && auth.isAuthenticated && auth.role
+      ? resolveRoleRedirect({
+          role: auth.role,
+          isPlatformAdmin: auth.isPlatformAdmin,
+          pathname: location.pathname,
+        })
+      : null;
 
-      if (routeRole) {
-        if (routeRole === "platform") {
-          if (!auth.isPlatformAdmin) {
-            console.warn(`[AuthGuard] Access denied to /platform for non-admin user`);
-            navigate({ to: homeForRole(auth.role), replace: true });
-          }
-        } else if (routeRole !== auth.role) {
-          console.warn(`[AuthGuard] Access denied to /${routeRole} for user with role ${auth.role}`);
-          navigate({ to: homeForRole(auth.role), replace: true });
-        }
-      }
+  useEffect(() => {
+    if (roleRedirect) {
+      console.warn(`[AuthGuard] Access denied to ${location.pathname} for role ${auth.role}`);
+      navigate({ to: roleRedirect, replace: true });
     }
-  }, [auth.isLoading, auth.isAuthenticated, auth.role, auth.isPlatformAdmin, location.pathname, navigate]);
+  }, [roleRedirect, location.pathname, auth.role, navigate]);
 
   // Gate: force password change before accessing any protected route
   useEffect(() => {
@@ -91,7 +81,9 @@ function AuthenticatedLayout() {
     }
   }, [auth.isLoading, auth.isAuthenticated, auth.profile, navigate]);
 
-  if (auth.isLoading || !auth.isAuthenticated) {
+  // Show the loader while auth resolves, and also when a role redirect is
+  // pending — so the cross-role child route never mounts.
+  if (auth.isLoading || !auth.isAuthenticated || roleRedirect) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />

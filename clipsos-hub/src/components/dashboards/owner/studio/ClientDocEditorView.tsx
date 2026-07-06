@@ -6,7 +6,7 @@
  */
 import { useClientDocs, useUpdateClientDoc } from "@/hooks/use-studio";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "./RichTextEditorLazy";
 import { Loader2 } from "lucide-react";
 
 interface ClientDocEditorViewProps {

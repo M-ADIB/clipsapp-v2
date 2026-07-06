@@ -12,8 +12,8 @@ import { useEffect, useState } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { TabPanel } from "@/components/ui/tab-panel";
-import { LeadsPage } from "./LeadsPage";
-import { PipelineDashboard } from "./PipelineDashboard";
+import { LeadsPage } from "@/components/dashboards/shared/LeadsPage";
+import { PipelineDashboard } from "@/components/dashboards/shared/PipelineDashboard";
 import { OwnerPlaceholderPage } from "./OwnerPlaceholderPage";
 
 /* ------------------------------------------------------------------ */

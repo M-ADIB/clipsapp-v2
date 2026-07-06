@@ -28,17 +28,6 @@ export interface ChatRoomWithPreview {
   thread_id: string | null;
 }
 
-export interface SendMessageInput {
-  thread_id: string;
-  content: string;
-  message_type?: string;
-  attachment_url?: string;
-  attachment_type?: string;
-  attachment_name?: string;
-  reply_to_message_id?: string;
-  mentioned_user_ids?: string[];
-}
-
 // ── Queries ─────────────────────────────────────────────────────────────────
 
 export interface UseChatRoomsOptions {
@@ -300,344 +289,35 @@ export function useChatMessages(threadId: string | null) {
   });
 }
 
-export function useMentionSuggestions(roomId: string | null) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.chat.mentionSuggestions(tenantId!, roomId!),
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, user_roles!user_roles_user_id_profiles_fkey(role)")
-        .eq("tenant_id", tenantId!);
-      return (data ?? []).map((p) => ({
-        id: p.id,
-        full_name: p.full_name,
-        avatar_url: p.avatar_url,
-        role: (p.user_roles as unknown as { role: string }[] | null)?.[0]?.role ?? "unknown",
-      }));
-    },
-    enabled: !!tenantId && !!roomId,
-    staleTime: 5 * 60 * 1000,
-  });
-}
+// ── Mutations + mentions (moved to use-chat-messages.ts; re-exported) ─────────
+export {
+  useMentionSuggestions,
+  useSendMessage,
+  useEditMessage,
+  useDeleteMessage,
+  useForwardMessage,
+  type SendMessageInput,
+  type ForwardMessageInput,
+} from "./use-chat-messages";
 
-// ── Mutations ───────────────────────────────────────────────────────────────
+// ── Reactions / read / mute / attachments (moved to use-chat-reactions.ts) ───
+export {
+  useReactToMessage,
+  useMarkAsRead,
+  useMuteRoom,
+  useUploadChatAttachment,
+  type MuteDuration,
+} from "./use-chat-reactions";
 
-export function useSendMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: SendMessageInput) => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .insert({
-          thread_id: input.thread_id,
-          sender_id: user!.id,
-          content: input.content,
-          message_type: input.message_type ?? "text",
-          tenant_id: tenantId!,
-          reply_to_message_id: input.reply_to_message_id ?? null,
-          mentioned_user_ids: input.mentioned_user_ids ?? [],
-        } as never)
-        .select(`*, sender:profiles!chat_messages_sender_id_fkey(id, full_name, avatar_url)`)
-        .single();
-      if (error) throw error;
-      if (input.attachment_url && input.attachment_type) {
-        await supabase.from("chat_attachments").insert({
-          message_id: data.id,
-          file_url: input.attachment_url,
-          file_name: input.attachment_name ?? "attachment",
-          file_type: input.attachment_type,
-          tenant_id: tenantId!,
-        });
-      }
-      return data;
-    },
-    onSuccess: (_data, input) => {
-      // Invalidate messages for this thread so the list refreshes immediately
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.messages(tenantId!, input.thread_id),
-      });
-      // Also refresh rooms to update last message preview + sidebar counts
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-      // Refresh sidebar unread counts
-      qc.invalidateQueries({ queryKey: queryKeys.chat.unreadCounts(tenantId!) });
-    },
-  });
-}
-
-export function useEditMessage() {
-  const { tenantId } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .update({ content, is_edited: true })
-        .eq("id", messageId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", "messages", tenantId], exact: false });
-    },
-  });
-}
-
-export function useDeleteMessage() {
-  const { tenantId } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (messageId: string) => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .update({ is_deleted: true })
-        .eq("id", messageId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", "messages", tenantId], exact: false });
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export function useReactToMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
-      const { data: existing } = await supabase
-        .from("chat_reactions")
-        .select("id")
-        .eq("message_id", messageId)
-        .eq("user_id", user!.id)
-        .eq("emoji", emoji)
-        .maybeSingle();
-      if (existing) {
-        await supabase.from("chat_reactions").delete().eq("id", existing.id);
-        return { action: "removed" as const };
-      }
-      await supabase.from("chat_reactions").insert({
-        message_id: messageId,
-        user_id: user!.id,
-        emoji,
-        tenant_id: tenantId!,
-      });
-      return { action: "added" as const };
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", "messages", tenantId], exact: false });
-    },
-  });
-}
-
-export function useMarkAsRead() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (threadId: string) => {
-      await supabase.from("chat_read_receipts").upsert(
-        {
-          thread_id: threadId,
-          user_id: user!.id,
-          last_read_at: new Date().toISOString(),
-          tenant_id: tenantId!,
-        },
-        { onConflict: "thread_id,user_id" },
-      );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.unreadCounts(tenantId!) });
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export type MuteDuration = "1h" | "8h" | "1d" | "forever" | "unmute";
-
-export function useMuteRoom() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ roomId, duration }: { roomId: string; duration: MuteDuration }) => {
-      if (duration === "unmute") {
-        await supabase.from("chat_mutes").delete().eq("room_id", roomId).eq("user_id", user!.id);
-        return;
-      }
-
-      let muted_until: string | null = null;
-      if (duration !== "forever") {
-        const hours = duration === "1h" ? 1 : duration === "8h" ? 8 : 24;
-        const until = new Date();
-        until.setHours(until.getHours() + hours);
-        muted_until = until.toISOString();
-      }
-
-      await supabase
-        .from("chat_mutes")
-        .upsert(
-          { room_id: roomId, user_id: user!.id, tenant_id: tenantId!, muted_until },
-          { onConflict: "room_id,user_id" },
-        );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export function useUploadChatAttachment() {
-  const { tenantId, user } = useAuth();
-  return useMutation({
-    mutationFn: async (file: File) => {
-      const ext = file.name.split(".").pop() ?? "bin";
-      const path = `${tenantId}/${user!.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("chat-attachments")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(path);
-      return { url: urlData.publicUrl, type: file.type, name: file.name, size: file.size };
-    },
-  });
-}
-
-// ── Room management ─────────────────────────────────────────────────────────
-
-export interface RoomMember {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: string;
-  is_revoked: boolean;
-}
-
-export function useRoomMembers(roomId: string | null) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: ["chat", "room-members", tenantId, roomId],
-    queryFn: async () => {
-      // Get all tenant profiles with roles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, user_roles!user_roles_user_id_profiles_fkey(role)")
-        .eq("tenant_id", tenantId!);
-
-      // Get access overrides for this room
-      const { data: overrides } = await supabase
-        .from("chat_room_access_overrides")
-        .select("user_id, action")
-        .eq("room_id", roomId!);
-
-      const overrideMap = new Map<string, string>();
-      // Process overrides — later entries override earlier ones
-      (overrides ?? []).forEach((o) => {
-        overrideMap.set(o.user_id, o.action);
-      });
-
-      return (profiles ?? []).map((p): RoomMember => {
-        const role = (p.user_roles as unknown as { role: string }[] | null)?.[0]?.role ?? "unknown";
-        const overrideAction = overrideMap.get(p.id);
-        return {
-          id: p.id,
-          full_name: p.full_name,
-          avatar_url: p.avatar_url,
-          role,
-          is_revoked: overrideAction === "revoke",
-        };
-      });
-    },
-    enabled: !!tenantId && !!roomId,
-  });
-}
-
-export function useKickMember() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ roomId, userId }: { roomId: string; userId: string }) => {
-      await supabase.from("chat_room_access_overrides").upsert(
-        {
-          room_id: roomId,
-          user_id: userId,
-          action: "revoke",
-          granted_by: user!.id,
-          tenant_id: tenantId!,
-        },
-        { onConflict: "room_id,user_id" },
-      );
-    },
-    onSuccess: (_, { roomId }) => {
-      qc.invalidateQueries({ queryKey: ["chat", "room-members", tenantId, roomId] });
-    },
-  });
-}
-
-export function useAddMember() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ roomId, userId }: { roomId: string; userId: string }) => {
-      await supabase.from("chat_room_access_overrides").upsert(
-        {
-          room_id: roomId,
-          user_id: userId,
-          action: "grant",
-          granted_by: user!.id,
-          tenant_id: tenantId!,
-        },
-        { onConflict: "room_id,user_id" },
-      );
-    },
-    onSuccess: (_, { roomId }) => {
-      qc.invalidateQueries({ queryKey: ["chat", "room-members", tenantId, roomId] });
-    },
-  });
-}
-
-export function useLeaveRoom() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (roomId: string) => {
-      await supabase.from("chat_room_access_overrides").upsert(
-        {
-          room_id: roomId,
-          user_id: user!.id,
-          action: "revoke",
-          granted_by: user!.id,
-          tenant_id: tenantId!,
-        },
-        { onConflict: "room_id,user_id" },
-      );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export function useDeleteRoom() {
-  const { tenantId } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (roomId: string) => {
-      // Atomic deletion via SECURITY DEFINER function (single transaction)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.rpc as any)("delete_chat_room", { _room_id: roomId });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
+// ── Room management (moved to use-chat-members.ts; re-exported) ──────────────
+export {
+  useRoomMembers,
+  useKickMember,
+  useAddMember,
+  useLeaveRoom,
+  useDeleteRoom,
+  type RoomMember,
+} from "./use-chat-members";
 
 // ── Room creation ───────────────────────────────────────────────────────────
 
@@ -903,133 +583,10 @@ export function useSidebarUnreadCounts() {
   });
 }
 
-// ── Forward ─────────────────────────────────────────────────────────────────
-
-export interface ForwardMessageInput {
-  messageId: string;
-  targetThreadId: string;
-  originalContent: string;
-  originalMessageType?: string;
-}
-
-export function useForwardMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: ForwardMessageInput) => {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .insert({
-          thread_id: input.targetThreadId,
-          sender_id: user!.id,
-          content: input.originalContent,
-          message_type: input.originalMessageType ?? "text",
-          tenant_id: tenantId!,
-          is_forwarded: true,
-          forwarded_from_message_id: input.messageId,
-        } as never)
-        .select(`*, sender:profiles!chat_messages_sender_id_fkey(id, full_name, avatar_url)`)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_data, input) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.messages(tenantId!, input.targetThreadId),
-      });
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-      qc.invalidateQueries({ queryKey: queryKeys.chat.unreadCounts(tenantId!) });
-    },
-  });
-}
-
-// ── Pinning ─────────────────────────────────────────────────────────────────
-
-export interface PinnedMessage {
-  id: string;
-  message_id: string;
-  room_id: string;
-  pinned_by: string;
-  created_at: string;
-  message: {
-    id: string;
-    content: string | null;
-    sender_id: string;
-    created_at: string;
-    sender: { id: string; full_name: string | null; avatar_url: string | null } | null;
-  };
-}
-
-export function usePinnedMessages(roomId: string | null) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.chat.pinnedMessages(tenantId!, roomId!),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chat_pinned_messages" as never)
-        .select(
-          `
-          id, message_id, room_id, pinned_by, created_at,
-          message:chat_messages!chat_pinned_messages_message_id_fkey(
-            id, content, sender_id, created_at,
-            sender:profiles!chat_messages_sender_id_fkey(id, full_name, avatar_url)
-          )
-        ` as never,
-        )
-        .eq("room_id" as never, roomId!)
-        .eq("tenant_id" as never, tenantId!)
-        .order("created_at" as never, { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as PinnedMessage[];
-    },
-    enabled: !!tenantId && !!roomId,
-    staleTime: 30_000,
-  });
-}
-
-export function usePinMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, roomId }: { messageId: string; roomId: string }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from as any)("chat_pinned_messages")
-        .insert({
-          message_id: messageId,
-          room_id: roomId,
-          tenant_id: tenantId!,
-          pinned_by: user!.id,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_data, input) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.pinnedMessages(tenantId!, input.roomId),
-      });
-    },
-  });
-}
-
-export function useUnpinMessage() {
-  const { tenantId } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, roomId }: { messageId: string; roomId: string }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from as any)("chat_pinned_messages")
-        .delete()
-        .eq("message_id", messageId)
-        .eq("tenant_id", tenantId!);
-      if (error) throw error;
-      return { roomId };
-    },
-    onSuccess: (_data, input) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.pinnedMessages(tenantId!, input.roomId),
-      });
-    },
-  });
-}
+// ── Pinning (moved to use-chat-pins.ts; re-exported for compatibility) ───────
+export {
+  usePinnedMessages,
+  usePinMessage,
+  useUnpinMessage,
+  type PinnedMessage,
+} from "./use-chat-pins";

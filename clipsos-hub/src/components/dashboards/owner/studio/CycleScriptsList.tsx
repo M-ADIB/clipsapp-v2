@@ -18,7 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor } from "./RichTextEditorLazy";
 import { useCycleScripts, useCreateScript, useUpdateScript } from "@/hooks/use-studio";
 import type { Json } from "@/integrations/supabase/types";
 

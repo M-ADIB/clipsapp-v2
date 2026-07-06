@@ -3,9 +3,14 @@
  * file-streaming proxy for native browser downloads.
  *
  * Auth modes:
- *   1. JWT in Authorization header (preferred — RLS scopes the lookup)
- *   2. JWT in `?token=` query param (used by the streaming iframe trigger)
- *   3. Guest review token (wave 4 — schema not present yet, returns 401 for now)
+ *   1. JWT in Authorization header (preferred — RLS scopes the lookup).
+ *   2. Short-lived signed download token in `?dl=` (used by the streaming
+ *      iframe trigger, which cannot set an Authorization header). The token is
+ *      an HMAC over (videoId, exp) minted only AFTER a header-authenticated
+ *      JSON request authorized the caller for that video. It expires in ~2 min
+ *      and authorizes exactly one video, so a leak (logs/referer/history) is
+ *      near-worthless — unlike the raw session JWT that was previously placed
+ *      in the URL.
  *
  * Resolution priority for the actual file URL:
  *   1. R2 original (videos.video_original_url) — highest quality
@@ -14,7 +19,7 @@
  *        returns 202 + retryAfterSeconds so the client retries.
  *
  * Modes:
- *   • Default → JSON `{ downloadUrl, filename, source }`.
+ *   • Default → JSON `{ downloadUrl, filename, source, dlToken }`.
  *   • `?stream=true` → proxies the file with `Content-Disposition: attachment`
  *     so the browser triggers a native download instead of opening a tab.
  */
@@ -24,7 +29,61 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  // Never send the token-bearing URL to third parties via Referer.
+  "Referrer-Policy": "no-referrer",
 };
+
+const DL_TOKEN_TTL_SECONDS = 120;
+
+/* ---------------- Signed download-token helpers ---------------- */
+// HMAC-SHA256 keyed with the service-role secret (server-only, never leaves
+// the function). The token proves "this caller was authorized for this videoId
+// until `exp`", nothing more.
+async function hmacKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+}
+
+function b64url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function mintDlToken(videoId: string): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + DL_TOKEN_TTL_SECONDS;
+  const payload = `${videoId}.${exp}`;
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    await hmacKey(),
+    new TextEncoder().encode(payload),
+  );
+  return `${payload}.${b64url(new Uint8Array(sig))}`;
+}
+
+async function verifyDlToken(token: string): Promise<string | null> {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [videoId, expStr, sig] = parts;
+  const exp = Number(expStr);
+  if (!videoId || !Number.isFinite(exp) || exp < Math.floor(Date.now() / 1000)) {
+    return null;
+  }
+  const expected = await crypto.subtle.sign(
+    "HMAC",
+    await hmacKey(),
+    new TextEncoder().encode(`${videoId}.${exp}`),
+  );
+  if (b64url(new Uint8Array(expected)) !== sig) return null;
+  return videoId;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,40 +95,59 @@ Deno.serve(async (req) => {
     const filename = url.searchParams.get("filename") ?? "download";
     const cloudflareId = url.searchParams.get("cloudflareId");
     const directUrl = url.searchParams.get("directUrl");
-    const videoId = url.searchParams.get("videoId");
+    let videoId = url.searchParams.get("videoId");
     const streamMode = url.searchParams.get("stream") === "true";
-
-    /* ---------------- AUTH ---------------- */
-    const authHeader = req.headers.get("Authorization");
-    const tokenParam = url.searchParams.get("token");
-    const effectiveAuthHeader = authHeader?.startsWith("Bearer ")
-      ? authHeader
-      : tokenParam
-        ? `Bearer ${tokenParam}`
-        : null;
-
-    if (!effectiveAuthHeader) {
-      return jsonError("Unauthorized — no token provided", 401);
-    }
+    const dlToken = url.searchParams.get("dl");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: effectiveAuthHeader } },
-    });
+    /* ---------------- AUTH ---------------- */
+    // Path A: signed short-lived download token (streaming iframe path).
+    // Path B: Authorization header (JSON path + any header-capable client).
+    let supabase;
+    let authorizedVideoId: string | null = null;
 
-    const token = effectiveAuthHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await supabase.auth.getUser(token);
-    if (claimsErr || !claims?.user) {
-      return jsonError("Unauthorized — invalid or expired token", 401);
+    if (dlToken) {
+      const tokenVideoId = await verifyDlToken(dlToken);
+      if (!tokenVideoId) {
+        return jsonError("Unauthorized — invalid or expired download token", 401);
+      }
+      // Token already proves authorization for this specific video; resolve the
+      // file with the service client (no user JWT is present on this request).
+      authorizedVideoId = tokenVideoId;
+      videoId = tokenVideoId;
+      supabase = createClient(supabaseUrl, serviceKey);
+    } else {
+      // TRANSITIONAL (remove after the dlToken frontend is fully rolled out):
+      // the previous frontend passes the session JWT as `?token=` on the
+      // streaming iframe request. Honor it like an Authorization header so
+      // downloads keep working during the rollover — it is validated with
+      // auth.getUser and scoped by RLS exactly like the header path.
+      const legacyToken = url.searchParams.get("token");
+      const authHeader =
+        req.headers.get("Authorization") ?? (legacyToken ? `Bearer ${legacyToken}` : null);
+      if (!authHeader?.startsWith("Bearer ")) {
+        return jsonError("Unauthorized — no token provided", 401);
+      }
+      supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claims, error: claimsErr } = await supabase.auth.getUser(token);
+      if (claimsErr || !claims?.user) {
+        return jsonError("Unauthorized — invalid or expired token", 401);
+      }
     }
 
-    /* ---------------- AUTHZ via RLS ---------------- */
+    /* ---------------- AUTHZ via RLS (header path) ---------------- */
     let resolvedDirectUrl = directUrl;
     let resolvedCloudflareId = cloudflareId;
 
     if (videoId) {
+      // Header path: RLS-scoped client enforces access. Token path: service
+      // client, but the signed token already gated access to this videoId.
       const { data: video, error: videoErr } = await supabase
         .from("videos")
         .select("id, video_cloudflare_id, video_playback_url, video_original_url")
@@ -87,6 +165,9 @@ Deno.serve(async (req) => {
         const m = video.video_playback_url.match(/cloudflarestream\.com\/([a-f0-9]{20,})/i);
         if (m) resolvedCloudflareId = m[1];
       }
+    } else if (dlToken) {
+      // A signed token must always carry a videoId.
+      return jsonError("Bad request — token missing video scope", 400);
     }
 
     /* ---------------- URL RESOLUTION ---------------- */
@@ -173,11 +254,17 @@ Deno.serve(async (req) => {
     }
 
     /* ---------------- JSON MODE (default) ---------------- */
+    // Mint a short-lived, single-video download token so the streaming iframe
+    // never has to carry the raw session JWT in its URL.
+    const tokenVideoId = authorizedVideoId ?? videoId;
+    const dl = tokenVideoId ? await mintDlToken(tokenVideoId) : null;
+
     return new Response(
       JSON.stringify({
         downloadUrl: resolvedUrl,
         filename: safeFilename,
         source: downloadSource,
+        dlToken: dl,
       }),
       {
         status: 200,

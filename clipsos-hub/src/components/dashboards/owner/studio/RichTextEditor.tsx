@@ -232,7 +232,7 @@ function extractSummaryAndBody(
   return { summaryContent, bodyBlocks };
 }
 
-interface RichTextEditorProps {
+export interface RichTextEditorProps {
   content?: string | Record<string, unknown>;
   placeholder?: string;
   onSave?: (json: Record<string, unknown>) => void;

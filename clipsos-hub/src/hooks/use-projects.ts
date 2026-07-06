@@ -66,6 +66,29 @@ export function useProjectsByClient(clientId: string | undefined) {
   });
 }
 
+/**
+ * The client's primary project id (first row) — used where only the id is
+ * needed, e.g. cycle creation. Matches the previous inline query.
+ */
+export function useClientPrimaryProject(clientId: string | undefined) {
+  const { tenantId } = useAuth();
+  return useQuery({
+    queryKey: [...queryKeys.projects.byClient(tenantId!, clientId!), "primary-id"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("client_id", clientId!)
+        .eq("tenant_id", tenantId!)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tenantId && !!clientId,
+  });
+}
+
 // ─── Single project detail ──────────────────────────────────────────────────
 
 export function useProject(projectId: string | undefined) {

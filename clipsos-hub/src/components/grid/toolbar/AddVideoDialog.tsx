@@ -46,6 +46,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatBytes } from "@/lib/format";
+const formatFileSize = formatBytes;
 
 interface AddVideoDialogProps {
   open: boolean;
@@ -57,12 +59,6 @@ interface AddVideoDialogProps {
   projectId?: string;
   /** Pre-filled cycle context, if any. */
   cycleId?: string;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 export function AddVideoDialog({

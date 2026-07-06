@@ -25,6 +25,7 @@ import {
 } from "@/hooks/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Plus, StickyNote } from "lucide-react";
+import { formatDate } from "@/lib/format";
 
 interface OverviewTabProps {
   clientId: string;
@@ -33,17 +34,6 @@ interface OverviewTabProps {
 /* ────────────────────────────────────────────────────────────────────── */
 /* Helpers                                                               */
 /* ────────────────────────────────────────────────────────────────────── */
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

@@ -35,11 +35,9 @@ import {
   useNotifications,
   useUnreadNotificationCount,
   useMarkNotificationRead,
+  useMarkAllNotificationsRead,
 } from "@/hooks/use-notifications";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/hooks/query-keys";
 
 type NotifTab = "all" | "mentioned" | "assigned";
 
@@ -76,10 +74,10 @@ export function NotificationsPopover({ unreadCount: _externalCount }: Notificati
   const navigate = useNavigate();
 
   const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
   const { data: notifications = [] } = useNotifications();
   const { data: liveUnreadCount = 0 } = useUnreadNotificationCount();
   const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
 
   const unreadCount = _externalCount ?? liveUnreadCount;
 
@@ -118,18 +116,7 @@ export function NotificationsPopover({ unreadCount: _externalCount }: Notificati
 
   const handleMarkAllRead = async () => {
     if (!tenantId || !user) return;
-    await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("tenant_id", tenantId)
-      .eq("user_id", user.id)
-      .eq("read", false);
-    qc.invalidateQueries({
-      queryKey: queryKeys.notifications.list(tenantId, user.id),
-    });
-    qc.invalidateQueries({
-      queryKey: queryKeys.notifications.unreadCount(tenantId, user.id),
-    });
+    await markAllRead.mutateAsync();
     setShowMenu(false);
   };
 

@@ -56,7 +56,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { RichTextEditor } from "../studio/RichTextEditor";
+import { RichTextEditor } from "../studio/RichTextEditorLazy";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ContentTabProps {
