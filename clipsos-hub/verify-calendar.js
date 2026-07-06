@@ -22,8 +22,8 @@ async function run() {
     await page.waitForLoadState("domcontentloaded");
 
     console.log("Logging in as client...");
-    await page.fill("#login-email", "adib@theclips.agency");
-    await page.fill("#login-password", "ClipsOS2026!");
+    await page.fill("#login-email", process.env.CLIPS_TEST_EMAIL);
+    await page.fill("#login-password", process.env.CLIPS_TEST_PASSWORD);
     await page.click('button[type="submit"]');
 
     console.log("Waiting for redirection...");

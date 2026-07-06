@@ -30,8 +30,8 @@ async function run() {
     await page.waitForTimeout(2000);
 
     console.log("Logging in as Owner...");
-    await page.fill("#login-email", "adib@theclips.agency");
-    await page.fill("#login-password", "ClipsOS2026!");
+    await page.fill("#login-email", process.env.CLIPS_TEST_EMAIL);
+    await page.fill("#login-password", process.env.CLIPS_TEST_PASSWORD);
     await page.click('button[type="submit"]');
 
     await page.waitForURL((url) => !url.href.includes("/login"), { timeout: 15000 });

@@ -16,6 +16,19 @@ dist-ssr
 .nitro
 *.local
 
+# Secrets / env — never commit real env files
+.env
+.env.*
+!.env.example
+
+# Credentials & PII data dumps — never commit
+**/dev-credentials.md
+scripts/people-import.sql
+scripts/import-leads-*.sql
+
+# Supabase local state
+supabase/.temp/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

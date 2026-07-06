@@ -52,6 +52,7 @@ export function useVideoDownload() {
         let attempt = 0;
         let resolvedUrl: string | null = null;
         let source = "unknown";
+        let dlToken: string | null = null;
 
         while (attempt <= MAX_RETRIES) {
           const ctrl = new AbortController();
@@ -87,15 +88,20 @@ export function useVideoDownload() {
           const data = await res.json();
           resolvedUrl = data.downloadUrl;
           source = data.source ?? "unknown";
+          dlToken = data.dlToken ?? null;
           break;
         }
 
         if (!resolvedUrl) throw new Error("Could not resolve download URL");
 
-        // Trigger native download via hidden iframe in stream mode
+        // Trigger native download via hidden iframe in stream mode.
+        // The iframe cannot send an Authorization header, so we use the
+        // short-lived, single-video signed token minted by the JSON call above
+        // instead of the raw session JWT (which must never appear in a URL).
+        if (!dlToken) throw new Error("Could not obtain download token");
         const streamParams = new URLSearchParams(params);
         streamParams.set("stream", "true");
-        streamParams.set("token", session.access_token);
+        streamParams.set("dl", dlToken);
         const streamUrl = `${SUPABASE_URL}/functions/v1/download-media?${streamParams.toString()}`;
 
         const iframe = document.createElement("iframe");
