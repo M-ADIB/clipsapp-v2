@@ -15,7 +15,7 @@
  *  - Loading spinner on submit buttons
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,7 +34,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import tcaLogo from "@/assets/tca-logo.png";
 import { homeForRole } from "@/lib/role-routes";
-import { passwordLoginSchema, type PasswordLoginValues } from "@/lib/forms/auth-schemas";
+import {
+  magicLinkSchema,
+  passwordLoginSchema,
+  type MagicLinkValues,
+  type PasswordLoginValues,
+} from "@/lib/forms/auth-schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -415,12 +420,24 @@ const RESEND_COOLDOWN = 60; // seconds
 
 function MagicLinkForm() {
   const auth = useAuth();
-  const emailRef = useRef<HTMLInputElement>(null);
 
-  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [sentEmail, setSentEmail] = useState("");
   const [cooldown, setCooldown] = useState(0);
+
+  const form = useForm<MagicLinkValues>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: { email: "" },
+    mode: "onSubmit",
+  });
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    reset,
+    formState: { errors, isSubmitting },
+  } = form;
 
   // Countdown timer for resend
   useEffect(() => {
@@ -431,17 +448,13 @@ function MagicLinkForm() {
     return () => clearInterval(interval);
   }, [cooldown]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || cooldown > 0) return;
-
-    setSubmitting(true);
+  const onSubmit = async ({ email }: MagicLinkValues) => {
     const { error } = await auth.signInWithMagicLink(email.trim());
-    setSubmitting(false);
 
     if (error) {
       toast.error("Could not send magic link", { description: error });
     } else {
+      setSentEmail(email.trim());
       setSent(true);
       setCooldown(RESEND_COOLDOWN);
       toast.success("Magic link sent!");
@@ -449,6 +462,7 @@ function MagicLinkForm() {
   };
 
   const handleResend = async () => {
+    const email = getValues("email");
     if (cooldown > 0 || !email.trim()) return;
     setSubmitting(true);
     const { error } = await auth.signInWithMagicLink(email.trim());
@@ -471,7 +485,8 @@ function MagicLinkForm() {
           </div>
           <p className="text-sm font-medium text-foreground-strong">Check your inbox</p>
           <p className="mt-1 text-xs text-foreground-muted">
-            We sent a sign-in link to <span className="font-medium text-foreground">{email}</span>
+            We sent a sign-in link to{" "}
+            <span className="font-medium text-foreground">{sentEmail}</span>
           </p>
           <p className="mt-3 text-xs text-foreground-disabled">
             Can't find it? Check your spam folder.
@@ -491,7 +506,8 @@ function MagicLinkForm() {
           type="button"
           onClick={() => {
             setSent(false);
-            setEmail("");
+            setSentEmail("");
+            reset({ email: "" });
             setCooldown(0);
           }}
           className="w-full text-center text-xs text-foreground-muted transition-colors hover:text-foreground"
@@ -503,7 +519,7 @@ function MagicLinkForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-2">
         <Label htmlFor="magic-email" className="text-xs text-foreground-muted">
           Email address
@@ -511,34 +527,33 @@ function MagicLinkForm() {
         <div className="relative">
           <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-disabled" />
           <Input
-            ref={emailRef}
             id="magic-email"
             type="email"
             autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@agency.com"
             className="h-11 bg-surface-input pl-10 text-sm"
+            aria-invalid={!!errors.email}
+            {...register("email")}
           />
         </div>
+        {errors.email && (
+          <p className="text-xs text-status-danger" role="alert">
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
       <p className="text-xs text-foreground-disabled">
         We'll send a one-time sign-in link to your email. No password needed.
       </p>
 
-      <Button
-        type="submit"
-        className="h-11 w-full text-sm font-medium"
-        disabled={submitting || !email.trim()}
-      >
-        {submitting ? (
+      <Button type="submit" className="h-11 w-full text-sm font-medium" disabled={isSubmitting}>
+        {isSubmitting ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <Mail className="mr-2 h-4 w-4" />
         )}
-        {submitting ? "Sending…" : "Send magic link"}
+        {isSubmitting ? "Sending…" : "Send magic link"}
       </Button>
     </form>
   );
