@@ -50,26 +50,24 @@ function AuthenticatedLayout() {
 
   // Gate: enforce role-aware routing (prevent cross-role URL navigation).
   // Decision logic lives in the pure, unit-tested `resolveRoleRedirect`.
+  // Computed during render so we can gate the <Outlet/> below on it — that
+  // stops a cross-role child component from mounting for a frame before the
+  // redirect fires (uses the same resolved auth data, so no lockout risk).
+  const roleRedirect =
+    !auth.isLoading && auth.isAuthenticated && auth.role
+      ? resolveRoleRedirect({
+          role: auth.role,
+          isPlatformAdmin: auth.isPlatformAdmin,
+          pathname: location.pathname,
+        })
+      : null;
+
   useEffect(() => {
-    if (!auth.isLoading && auth.isAuthenticated && auth.role) {
-      const target = resolveRoleRedirect({
-        role: auth.role,
-        isPlatformAdmin: auth.isPlatformAdmin,
-        pathname: location.pathname,
-      });
-      if (target) {
-        console.warn(`[AuthGuard] Access denied to ${location.pathname} for role ${auth.role}`);
-        navigate({ to: target, replace: true });
-      }
+    if (roleRedirect) {
+      console.warn(`[AuthGuard] Access denied to ${location.pathname} for role ${auth.role}`);
+      navigate({ to: roleRedirect, replace: true });
     }
-  }, [
-    auth.isLoading,
-    auth.isAuthenticated,
-    auth.role,
-    auth.isPlatformAdmin,
-    location.pathname,
-    navigate,
-  ]);
+  }, [roleRedirect, location.pathname, auth.role, navigate]);
 
   // Gate: force password change before accessing any protected route
   useEffect(() => {
@@ -83,7 +81,9 @@ function AuthenticatedLayout() {
     }
   }, [auth.isLoading, auth.isAuthenticated, auth.profile, navigate]);
 
-  if (auth.isLoading || !auth.isAuthenticated) {
+  // Show the loader while auth resolves, and also when a role redirect is
+  // pending — so the cross-role child route never mounts.
+  if (auth.isLoading || !auth.isAuthenticated || roleRedirect) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
