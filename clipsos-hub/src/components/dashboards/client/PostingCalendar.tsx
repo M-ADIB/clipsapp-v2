@@ -4,11 +4,10 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
-import { useQuery } from "@tanstack/react-query";
+import { useMyClientIds } from "@/hooks/use-clients";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useGridRows } from "@/components/grid/core/useGridRows";
 import { useGridMutations } from "@/components/grid/core/useGridMutations";
 import { BUILTIN_COLUMNS } from "@/components/grid/core/builtinColumns";
@@ -19,11 +18,11 @@ function renderEventContent(eventInfo: any) {
   const { thumbnailUrl, statusLabel, statusColor } = eventInfo.event.extendedProps;
 
   return (
-    <div 
+    <div
       className="flex items-center gap-2 p-1.5 w-full rounded-lg border bg-surface-card hover:bg-surface-raised transition-all duration-200 shadow-sm overflow-hidden min-w-0"
-      style={{ 
+      style={{
         borderColor: "var(--border)",
-        borderLeft: `3px solid ${statusColor}`
+        borderLeft: `3px solid ${statusColor}`,
       }}
     >
       {thumbnailUrl ? (
@@ -42,7 +41,9 @@ function renderEventContent(eventInfo: any) {
       )}
       <div className="min-w-0 flex-1 leading-tight">
         <p className="truncate text-[11px] font-semibold text-foreground-strong">{title}</p>
-        <p className="text-[9px] text-foreground-muted font-medium mt-0.5 truncate">{statusLabel}</p>
+        <p className="text-[9px] text-foreground-muted font-medium mt-0.5 truncate">
+          {statusLabel}
+        </p>
       </div>
     </div>
   );
@@ -55,7 +56,7 @@ export function PostingCalendar({
   embedded?: boolean;
   active?: boolean;
 }) {
-  const { user, tenantId } = useAuth();
+  const { tenantId } = useAuth();
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
 
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
@@ -80,18 +81,7 @@ export function PostingCalendar({
     }
   }, [active]);
 
-  const { data: clientIds = [] } = useQuery({
-    queryKey: ["client_access", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_access")
-        .select("client_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return (data ?? []).map((r) => r.client_id);
-    },
-  });
+  const { data: clientIds = [] } = useMyClientIds();
 
   const primaryClientId = clientIds[0];
   const scope = useMemo(() => ({ clientId: primaryClientId }), [primaryClientId]);
@@ -112,7 +102,7 @@ export function PostingCalendar({
           thumbnailUrl: r.data.video_thumbnail_url as string | null,
           statusLabel: (r.data.status as { display_name?: string } | null)?.display_name ?? "—",
           statusColor: (r.data.status as { color?: string } | null)?.color ?? "#6366f1",
-        }
+        },
       }));
   }, [rows]);
 
