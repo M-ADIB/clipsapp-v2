@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantSettings } from "@/hooks/use-tenant-settings";
+import { resendSettingsSchema, type ResendSettingsValues } from "@/lib/forms/integration-schemas";
 import {
   Settings,
   Mail,
@@ -29,23 +32,28 @@ interface ResendSettingsDialogProps {
 }
 
 export function ResendSettingsDialog({ open, onOpenChange }: ResendSettingsDialogProps) {
-  const { settings, isLoading, isUpdating, updateSettings } = useTenantSettings();
-  const [apiKey, setApiKey] = useState("");
-  const [fromEmail, setFromEmail] = useState("");
+  const { settings, isUpdating, updateSettings } = useTenantSettings();
   const [showKey, setShowKey] = useState(false);
+
+  const { register, handleSubmit, reset } = useForm<ResendSettingsValues>({
+    resolver: zodResolver(resendSettingsSchema),
+    defaultValues: { apiKey: "", fromEmail: "" },
+  });
 
   useEffect(() => {
     if (settings) {
-      setApiKey(settings.resend_api_key || "");
-      setFromEmail(settings.resend_from_email || "ClipsOS <noreply@theclips.agency>");
+      reset({
+        apiKey: settings.resend_api_key || "",
+        fromEmail: settings.resend_from_email || "ClipsOS <noreply@theclips.agency>",
+      });
     }
-  }, [settings]);
+  }, [settings, reset]);
 
-  const handleSave = async () => {
+  const onSubmit = async (values: ResendSettingsValues) => {
     try {
       await updateSettings({
-        resend_api_key: apiKey.trim(),
-        resend_from_email: fromEmail.trim(),
+        resend_api_key: values.apiKey.trim(),
+        resend_from_email: values.fromEmail.trim(),
       });
       toast.success("Resend integration settings saved!");
       onOpenChange(false);
@@ -70,103 +78,109 @@ export function ResendSettingsDialog({ open, onOpenChange }: ResendSettingsDialo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
-          {/* Status info */}
-          <div
-            className="flex items-center gap-3 p-3.5 rounded-lg border text-sm"
-            style={{
-              background: hasConfig ? "rgba(16,185,129,0.05)" : "rgba(245,158,11,0.05)",
-              borderColor: hasConfig ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
-            }}
-          >
-            {hasConfig ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-            )}
-            <div className="text-foreground">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col" noValidate>
+          <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
+            {/* Status info */}
+            <div
+              className="flex items-center gap-3 p-3.5 rounded-lg border text-sm"
+              style={{
+                background: hasConfig ? "rgba(16,185,129,0.05)" : "rgba(245,158,11,0.05)",
+                borderColor: hasConfig ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)",
+              }}
+            >
               {hasConfig ? (
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                  Resend Connected.
-                </span>
+                <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
               ) : (
-                <span className="font-medium text-amber-600 dark:text-amber-400">
-                  Not Connected.
-                </span>
-              )}{" "}
-              Add your API key below to send tenant emails.
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+              )}
+              <div className="text-foreground">
+                {hasConfig ? (
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    Resend Connected.
+                  </span>
+                ) : (
+                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                    Not Connected.
+                  </span>
+                )}{" "}
+                Add your API key below to send tenant emails.
+              </div>
             </div>
-          </div>
 
-          {/* API Key */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="resend-key"
-              className="flex items-center gap-1.5 text-foreground-strong"
-            >
-              Resend API Key (re_...)
-            </Label>
-            <div className="relative">
+            {/* API Key */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="resend-key"
+                className="flex items-center gap-1.5 text-foreground-strong"
+              >
+                Resend API Key (re_...)
+              </Label>
+              <div className="relative">
+                <Input
+                  id="resend-key"
+                  type={showKey ? "text" : "password"}
+                  placeholder="re_..."
+                  className="font-mono text-xs pr-10"
+                  {...register("apiKey")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-foreground-muted">
+                Get your API key from your{" "}
+                <a
+                  href="https://resend.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-0.5"
+                >
+                  Resend Dashboard
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              </p>
+            </div>
+
+            {/* From Email */}
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="resend-from"
+                className="flex items-center gap-1.5 text-foreground-strong"
+              >
+                Default From Email Address
+              </Label>
               <Input
-                id="resend-key"
-                type={showKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="re_..."
-                className="font-mono text-xs pr-10"
+                id="resend-from"
+                placeholder="Agency Name <noreply@agency.com>"
+                className="text-sm"
+                {...register("fromEmail")}
               />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-foreground-muted hover:text-foreground transition-colors"
-              >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+              <p className="text-[11px] text-foreground-muted">
+                Specify the sender name and address. Must be a verified domain in your Resend
+                account.
+              </p>
             </div>
-            <p className="text-[11px] text-foreground-muted">
-              Get your API key from your{" "}
-              <a
-                href="https://resend.com/api-keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-0.5"
-              >
-                Resend Dashboard
-                <ExternalLink className="h-2.5 w-2.5" />
-              </a>
-            </p>
           </div>
 
-          {/* From Email */}
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="resend-from"
-              className="flex items-center gap-1.5 text-foreground-strong"
+          <DialogFooter className="pt-4 border-t border-border mt-auto flex gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isUpdating}
             >
-              Default From Email Address
-            </Label>
-            <Input
-              id="resend-from"
-              value={fromEmail}
-              onChange={(e) => setFromEmail(e.target.value)}
-              placeholder="Agency Name <noreply@agency.com>"
-              className="text-sm"
-            />
-            <p className="text-[11px] text-foreground-muted">
-              Specify the sender name and address. Must be a verified domain in your Resend account.
-            </p>
-          </div>
-        </div>
-
-        <DialogFooter className="pt-4 border-t border-border mt-auto flex gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isUpdating}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isUpdating} className="gap-2">
-            {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isUpdating ? "Saving..." : "Save Settings"}
-          </Button>
-        </DialogFooter>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isUpdating} className="gap-2">
+              {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isUpdating ? "Saving..." : "Save Settings"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
