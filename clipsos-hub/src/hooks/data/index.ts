@@ -58,7 +58,7 @@ export {
   useCrmPeople,
   useCrmPeoplePaginated,
   useCrmPerson,
-  useCrmPersonBySlug,
+  useCrmPersonById,
   useCreateCrmPerson,
   useUpdateCrmPerson,
   useCrmCompanies,

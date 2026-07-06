@@ -41,13 +41,8 @@ jobs:
         run: bun run lint
         continue-on-error: true
 
-      # TEMPORARILY non-blocking: there are pre-existing `crm_people.slug` type
-      # errors (the column is referenced in code but absent from the generated
-      # types / live schema dump). Once that drift is resolved, remove
-      # `continue-on-error` so typecheck gates the build.
       - name: Typecheck
         run: bun run typecheck
-        continue-on-error: true
 
       - name: Unit tests
         run: bun test src/

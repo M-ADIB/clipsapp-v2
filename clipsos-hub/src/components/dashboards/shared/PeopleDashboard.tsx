@@ -435,7 +435,7 @@ export function PeopleDashboard() {
               return (
                 <tr
                   key={person.id}
-                  onClick={() => handleRowClick(person.slug)}
+                  onClick={() => handleRowClick(person.id)}
                   className={`cursor-pointer transition-colors hover:bg-surface-raised/50 ${isSelected ? "bg-surface-raised" : ""}`}
                 >
                   <td

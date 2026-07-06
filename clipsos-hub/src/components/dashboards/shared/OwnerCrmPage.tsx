@@ -402,7 +402,7 @@ export function OwnerCrmPage() {
               return (
                 <tr
                   key={person.id}
-                  onClick={() => handleRowClick(person.slug)}
+                  onClick={() => handleRowClick(person.id)}
                   className={`h-[42px] cursor-pointer border-b border-[var(--border)] transition-colors ${
                     isSelected ? "bg-primary/[0.06]" : "hover:bg-foreground/[0.03]"
                   }`}
