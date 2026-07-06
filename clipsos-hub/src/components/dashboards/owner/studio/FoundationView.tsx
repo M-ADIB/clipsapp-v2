@@ -55,189 +55,15 @@ interface FoundationViewProps {
   clientId: string;
 }
 
-interface QuestionBlock {
-  id: string;
-  question: string;
-  answer: string;
-  section: string;
-  placeholder?: string;
-  required?: boolean;
-}
-
-interface FoundationData {
-  category?: string;
-  questions?: QuestionBlock[];
-  name?: string;
-  profession?: string;
-  business?: string;
-  target_audience?: string;
-  problem_solved?: string;
-  differentiator?: string;
-  three_words?: string[];
-  unique_angle?: string;
-  achievements?: string[];
-  topics?: string[];
-  content_formats?: string[];
-  cta?: string;
-  platforms?: string[];
-  success_90_days?: string;
-  admired_creators?: string[];
-  misconceptions?: string;
-  signature_story?: string;
-  [key: string]: unknown;
-}
-
-// Default Templates for Categories
-const TEMPLATES: Record<string, { category: string; questions: QuestionBlock[] }> = {
-  Doctor: {
-    category: "Doctor",
-    questions: [
-      { id: "doc-name", question: "Full Name", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter full name...", required: true },
-      { id: "doc-title", question: "Profession / Title", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter profession / title...", required: true },
-      { id: "doc-specialty", question: "Clinic Name / Medical Specialty", answer: "", section: "CLINICAL & BUSINESS", placeholder: "Enter clinic name / specialty...", required: false },
-      { id: "doc-audience", question: "Target Patient Profile", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe your target patient profile...", required: true },
-      { id: "doc-diff", question: "Practice Unique Differentiator", answer: "", section: "BRAND & STRATEGY", placeholder: "What makes your medical practice unique?", required: false },
-      { id: "doc-topics", question: "Key Educational Health Topics", answer: "", section: "CONTENT & MARKETING", placeholder: "List topics you want to educate patients on...", required: false },
-      { id: "doc-cta", question: "Primary Call to Action (CTA)", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter main call to action...", required: true }
-    ]
-  },
-  Clinic: {
-    category: "Clinic",
-    questions: [
-      { id: "clinic-name", question: "Clinic Name", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter clinic name...", required: true },
-      { id: "clinic-services", question: "Services & Specialties", answer: "", section: "CLINICAL & BUSINESS", placeholder: "List clinic services and specialties...", required: true },
-      { id: "clinic-location", question: "Location & Facilities", answer: "", section: "CLINICAL & BUSINESS", placeholder: "Enter locations / facilities info...", required: false },
-      { id: "clinic-audience", question: "Target Patient Demographics", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe target patient demographics...", required: true },
-      { id: "clinic-value", question: "Why Patients Choose You", answer: "", section: "BRAND & STRATEGY", placeholder: "What is your main clinic value proposition?", required: false },
-      { id: "clinic-cta", question: "Primary Call to Action", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter main call to action...", required: true }
-    ]
-  },
-  Business: {
-    category: "Business",
-    questions: [
-      { id: "biz-name", question: "Business Name", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter business name...", required: true },
-      { id: "biz-industry", question: "Business Industry / Niche", answer: "", section: "CLINICAL & BUSINESS", placeholder: "Describe your industry / niche...", required: true },
-      { id: "biz-audience", question: "Target Client Profile", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe your ideal client...", required: true },
-      { id: "biz-problem", question: "Core Problem Solved", answer: "", section: "BRAND & STRATEGY", placeholder: "What problem does your business solve?", required: false },
-      { id: "biz-usp", question: "Unique Selling Proposition", answer: "", section: "BRAND & STRATEGY", placeholder: "What makes your business different?", required: false },
-      { id: "biz-cta", question: "Primary Call to Action", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter main call to action...", required: true }
-    ]
-  },
-  "Coach / Consultant": {
-    category: "Coach / Consultant",
-    questions: [
-      { id: "coach-name", question: "Full Name / Brand", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter name / brand...", required: true },
-      { id: "coach-niche", question: "Niche / Area of Expertise", answer: "", section: "CLINICAL & BUSINESS", placeholder: "Enter coaching niche / consulting expertise...", required: true },
-      { id: "coach-audience", question: "Ideal Client Profile", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe your target client...", required: true },
-      { id: "coach-trans", question: "Key Client Transformation", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe the transformation you provide...", required: false },
-      { id: "coach-method", question: "Signature Methodology", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe your signature methodology...", required: false },
-      { id: "coach-cta", question: "Primary Call to Action", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter main call to action...", required: true }
-    ]
-  },
-  "Real Estate": {
-    category: "Real Estate",
-    questions: [
-      { id: "re-name", question: "Agent / Agency Name", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter agent or agency name...", required: true },
-      { id: "re-territory", question: "Market Focus / Specialty Area", answer: "", section: "CLINICAL & BUSINESS", placeholder: "Describe your territory or specialty area...", required: true },
-      { id: "re-audience", question: "Target Clients (Buyers/Sellers)", answer: "", section: "BRAND & STRATEGY", placeholder: "Describe your target clients...", required: true },
-      { id: "re-advantage", question: "Unique Real Estate Advantage", answer: "", section: "BRAND & STRATEGY", placeholder: "What makes your real estate service stand out?", required: false },
-      { id: "re-listings", question: "Key Focus Areas / Listings", answer: "", section: "CONTENT & MARKETING", placeholder: "List key neighborhoods / listings to focus on...", required: false },
-      { id: "re-cta", question: "Primary Call to Action", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter main call to action...", required: true }
-    ]
-  },
-  Other: {
-    category: "Other",
-    questions: [
-      { id: "name", question: "What is your full name?", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter full name...", required: true },
-      { id: "profession", question: "What is your profession or title?", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter profession or title...", required: true },
-      { id: "business", question: "What does your business do in one sentence?", answer: "", section: "PERSONAL & PROFESSIONAL", placeholder: "Enter business description...", required: false },
-      { id: "target_audience", question: "Who is your target audience?", answer: "", section: "BRAND & STRATEGY", placeholder: "Enter target audience...", required: true },
-      { id: "problem_solved", question: "What problem do you solve for them?", answer: "", section: "BRAND & STRATEGY", placeholder: "Enter problem solved...", required: false },
-      { id: "differentiator", question: "What makes you different from others in your space?", answer: "", section: "BRAND & STRATEGY", placeholder: "Enter differentiator...", required: false },
-      { id: "unique_angle", question: "What is your unique angle or point of view?", answer: "", section: "BRAND & STRATEGY", placeholder: "Enter unique angle...", required: false },
-      { id: "cta", question: "What is your call to action? (what do you want viewers to do?)", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter CTA...", required: true },
-      { id: "success_90_days", question: "What does success look like for your content in 90 days?", answer: "", section: "CONTENT & MARKETING", placeholder: "Enter success definition...", required: false }
-    ]
-  }
-};
-
-const CATEGORIES = [
-  { label: "Doctor", emoji: "👨‍⚕️" },
-  { label: "Clinic", emoji: "🏥" },
-  { label: "Business", emoji: "🏢" },
-  { label: "Coach / Consultant", emoji: "🎯" },
-  { label: "Real Estate", emoji: "🏡" },
-  { label: "Other", emoji: "📝" },
-];
-
-function parseFoundation(raw: Json | null | undefined): FoundationData {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  return raw as FoundationData;
-}
-
-function formatValue(value: unknown): string {
-  if (!value) return "";
-  if (Array.isArray(value)) return value.join(", ");
-  return String(value);
-}
-
-// Autofilling questions from legacy keys
-function getInitialQuestions(rawFoundation: FoundationData, category: string): QuestionBlock[] {
-  if (rawFoundation.questions && Array.isArray(rawFoundation.questions)) {
-    return (rawFoundation.questions as QuestionBlock[]).map(q => ({
-      ...q,
-      required: q.required ?? false
-    }));
-  }
-
-  const template = TEMPLATES[category] || TEMPLATES.Other;
-
-  return template.questions.map((q) => {
-    let legacyAnswer = "";
-    if (
-      q.id === "doc-name" ||
-      q.id === "clinic-name" ||
-      q.id === "biz-name" ||
-      q.id === "coach-name" ||
-      q.id === "re-name" ||
-      q.id === "name"
-    ) {
-      legacyAnswer = formatValue(rawFoundation.name);
-    } else if (q.id === "doc-title" || q.id === "profession") {
-      legacyAnswer = formatValue(rawFoundation.profession);
-    } else if (
-      q.id === "biz-industry" ||
-      q.id === "coach-niche" ||
-      q.id === "re-territory" ||
-      q.id === "clinic-services"
-    ) {
-      legacyAnswer = formatValue(rawFoundation.business || rawFoundation.profession);
-    } else if (q.id.includes("audience") || q.id === "target_audience") {
-      legacyAnswer = formatValue(rawFoundation.target_audience);
-    } else if (q.id === "biz-problem" || q.id === "problem_solved") {
-      legacyAnswer = formatValue(rawFoundation.problem_solved);
-    } else if (
-      q.id === "doc-diff" ||
-      q.id === "clinic-value" ||
-      q.id === "biz-usp" ||
-      q.id === "coach-trans" ||
-      q.id === "re-advantage" ||
-      q.id === "differentiator"
-    ) {
-      legacyAnswer = formatValue(rawFoundation.differentiator);
-    } else if (q.id === "cta") {
-      legacyAnswer = formatValue(rawFoundation.cta);
-    } else if (q.id === "success_90_days") {
-      legacyAnswer = formatValue(rawFoundation.success_90_days);
-    }
-
-    return {
-      ...q,
-      required: q.required ?? false,
-      answer: legacyAnswer || q.answer,
-    };
-  });
-}
+import {
+  TEMPLATES,
+  CATEGORIES,
+  parseFoundation,
+  formatValue,
+  getInitialQuestions,
+  type QuestionBlock,
+  type FoundationData,
+} from "./foundation-lib";
 
 export function FoundationView({ clientId }: FoundationViewProps) {
   const { data: brain, isLoading } = useClientBrain(clientId);
@@ -275,7 +101,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
 
   // Paste Summary dialog state
   const [summaryDialogOpen, setSummaryDialogOpen] = useState(false);
-  const [summaryTab, setSummaryTab] = useState<"transcript" | "text" | "file" | "url">("transcript");
+  const [summaryTab, setSummaryTab] = useState<"transcript" | "text" | "file" | "url">(
+    "transcript",
+  );
   const [transcriptInput, setTranscriptInput] = useState("");
   const [contextInput, setContextInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
@@ -318,14 +146,39 @@ export function FoundationView({ clientId }: FoundationViewProps) {
 
     // Legacy Key Mirror Map
     const legacyKeyMap: Record<string, string> = {
-      "doc-name": "name", "clinic-name": "name", "biz-name": "name", "coach-name": "name", "re-name": "name", "name": "name",
-      "doc-title": "profession", "profession": "profession",
-      "biz-industry": "business", "coach-niche": "business", "re-territory": "business", "clinic-services": "business",
-      "doc-audience": "target_audience", "clinic-audience": "target_audience", "biz-audience": "target_audience", "coach-audience": "target_audience", "re-audience": "target_audience", "target_audience": "target_audience",
-      "biz-problem": "problem_solved", "problem_solved": "problem_solved",
-      "doc-diff": "differentiator", "clinic-value": "differentiator", "biz-usp": "differentiator", "coach-trans": "differentiator", "re-advantage": "differentiator", "differentiator": "differentiator",
-      "doc-cta": "cta", "clinic-cta": "cta", "biz-cta": "cta", "coach-cta": "cta", "re-cta": "cta", "cta": "cta",
-      "success_90_days": "success_90_days",
+      "doc-name": "name",
+      "clinic-name": "name",
+      "biz-name": "name",
+      "coach-name": "name",
+      "re-name": "name",
+      name: "name",
+      "doc-title": "profession",
+      profession: "profession",
+      "biz-industry": "business",
+      "coach-niche": "business",
+      "re-territory": "business",
+      "clinic-services": "business",
+      "doc-audience": "target_audience",
+      "clinic-audience": "target_audience",
+      "biz-audience": "target_audience",
+      "coach-audience": "target_audience",
+      "re-audience": "target_audience",
+      target_audience: "target_audience",
+      "biz-problem": "problem_solved",
+      problem_solved: "problem_solved",
+      "doc-diff": "differentiator",
+      "clinic-value": "differentiator",
+      "biz-usp": "differentiator",
+      "coach-trans": "differentiator",
+      "re-advantage": "differentiator",
+      differentiator: "differentiator",
+      "doc-cta": "cta",
+      "clinic-cta": "cta",
+      "biz-cta": "cta",
+      "coach-cta": "cta",
+      "re-cta": "cta",
+      cta: "cta",
+      success_90_days: "success_90_days",
     };
 
     const nextFoundation: FoundationData = {
@@ -364,7 +217,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
     }
 
     const updatedQuestions = questions.map((q) =>
-      q.id === qId ? { ...q, question: editLabelText.trim() } : q
+      q.id === qId ? { ...q, question: editLabelText.trim() } : q,
     );
     setQuestions(updatedQuestions);
     setEditingId(null);
@@ -390,7 +243,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
 
   const handleToggleRequired = async (qId: string) => {
     const updatedQuestions = questions.map((q) =>
-      q.id === qId ? { ...q, required: !q.required } : q
+      q.id === qId ? { ...q, required: !q.required } : q,
     );
     setQuestions(updatedQuestions);
 
@@ -518,7 +371,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
     }
     const newName = editSectionText.trim().toUpperCase();
     const updatedQuestions = questions.map((q) =>
-      q.section === oldName ? { ...q, section: newName } : q
+      q.section === oldName ? { ...q, section: newName } : q,
     );
     setQuestions(updatedQuestions);
     setEditingSection(null);
@@ -768,7 +621,8 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                     Paste Summary / Context Dump
                   </DialogTitle>
                   <DialogDescription className="text-xs">
-                    Provide transcript summaries, notes, URL links, or documents. The AI will extract relevant answers.
+                    Provide transcript summaries, notes, URL links, or documents. The AI will
+                    extract relevant answers.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -940,7 +794,8 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                     Send Onboarding to Client
                   </DialogTitle>
                   <DialogDescription className="text-xs">
-                    Share this direct login URL with your client. They can use it to log in and complete the onboarding checklist.
+                    Share this direct login URL with your client. They can use it to log in and
+                    complete the onboarding checklist.
                   </DialogDescription>
                 </DialogHeader>
 
@@ -955,7 +810,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                     <Button
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/login?client=${clientId}`);
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/login?client=${clientId}`,
+                        );
                         toast.success("Invite link copied!");
                       }}
                       className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 text-xs font-medium"
@@ -1053,7 +910,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                     "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all shrink-0 hover:bg-surface-raised cursor-pointer",
                     isActive
                       ? "border-primary bg-primary/5 text-foreground-strong ring-1 ring-primary/30"
-                      : "border-border bg-surface-card text-foreground-muted"
+                      : "border-border bg-surface-card text-foreground-muted",
                   )}
                 >
                   <span>{cat.emoji}</span>
@@ -1204,7 +1061,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                             <div className="flex items-center gap-1.5 group/title truncate">
                               <span className="text-xs font-semibold text-foreground-strong">
                                 {q.question}
-                                {q.required && <span className="text-red-400 ml-1 font-bold">*</span>}
+                                {q.required && (
+                                  <span className="text-red-400 ml-1 font-bold">*</span>
+                                )}
                               </span>
                               {isTeam && (
                                 <button
@@ -1227,7 +1086,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                 : q.required
                                   ? "bg-red-500/10 text-red-400 border-red-500/20"
-                                  : "bg-surface-raised text-foreground-disabled border-border"
+                                  : "bg-surface-raised text-foreground-disabled border-border",
                             )}
                           >
                             {isFilled ? "FILLED" : q.required ? "REQUIRED" : "OPTIONAL"}
@@ -1242,7 +1101,7 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                                 "text-[9px] font-semibold px-2 py-0.5 border rounded-full select-none cursor-pointer transition-all shrink-0",
                                 q.required
                                   ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
-                                  : "bg-surface-raised text-foreground-disabled border-border hover:bg-surface-card hover:text-foreground-muted"
+                                  : "bg-surface-raised text-foreground-disabled border-border hover:bg-surface-card hover:text-foreground-muted",
                               )}
                             >
                               {q.required ? "Required" : "Optional"}
@@ -1319,8 +1178,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
           <DialogHeader>
             <DialogTitle className="text-foreground-strong">Reset Questions Template?</DialogTitle>
             <DialogDescription className="text-xs">
-              Are you sure you want to change the industry category to "{confirmCategory}"?
-              This will overwrite the current question blocks and reset them to the new template. All currently filled answers will be lost.
+              Are you sure you want to change the industry category to "{confirmCategory}"? This
+              will overwrite the current question blocks and reset them to the new template. All
+              currently filled answers will be lost.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -1356,10 +1216,13 @@ export function FoundationView({ clientId }: FoundationViewProps) {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <p className="text-xs text-foreground-muted leading-relaxed">
-                Save the current list of question blocks (with blank answers) as a reusable category template.
+                Save the current list of question blocks (with blank answers) as a reusable category
+                template.
               </p>
               <div className="space-y-2">
-                <Label htmlFor="template-name" className="text-foreground-muted">Template Name</Label>
+                <Label htmlFor="template-name" className="text-foreground-muted">
+                  Template Name
+                </Label>
                 <Input
                   id="template-name"
                   placeholder="e.g. Software Engineer, Real Estate Agent"
@@ -1382,7 +1245,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
                   disabled={!templateName.trim() || createTemplate.isPending}
                   className="text-xs"
                 >
-                  {createTemplate.isPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                  {createTemplate.isPending && (
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  )}
                   Save Template
                 </Button>
               </DialogFooter>
@@ -1400,7 +1265,9 @@ export function FoundationView({ clientId }: FoundationViewProps) {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label htmlFor="new-section-name" className="text-foreground-muted">Section Name</Label>
+                <Label htmlFor="new-section-name" className="text-foreground-muted">
+                  Section Name
+                </Label>
                 <Input
                   id="new-section-name"
                   placeholder="e.g. ADDITIONAL QUESTIONS"
@@ -1433,14 +1300,19 @@ export function FoundationView({ clientId }: FoundationViewProps) {
 
       {/* ─── Delete Section Confirm Dialog ─── */}
       {isTeam && (
-        <Dialog open={sectionToDelete !== null} onOpenChange={(open) => !open && setSectionToDelete(null)}>
+        <Dialog
+          open={sectionToDelete !== null}
+          onOpenChange={(open) => !open && setSectionToDelete(null)}
+        >
           <DialogContent className="bg-surface-card border-border sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-foreground-strong">Delete Section</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <p className="text-xs text-foreground-muted leading-relaxed">
-                Are you sure you want to delete the section <strong className="text-foreground-strong">"{sectionToDelete}"</strong> and all of its question blocks? This action cannot be undone.
+                Are you sure you want to delete the section{" "}
+                <strong className="text-foreground-strong">"{sectionToDelete}"</strong> and all of
+                its question blocks? This action cannot be undone.
               </p>
               <DialogFooter className="gap-2 mt-4">
                 <Button
