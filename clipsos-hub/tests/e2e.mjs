@@ -53,8 +53,10 @@ async function shot(label) {
 }
 
 async function go(path) {
-  await page.goto(BASE + path, { waitUntil: "networkidle", timeout: 45000 }).catch(() => {});
-  await page.waitForTimeout(1500);
+  // domcontentloaded, not networkidle: realtime sockets + supabase retries
+  // keep the network busy indefinitely on some pages.
+  await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 45000 }).catch(() => {});
+  await page.waitForTimeout(2500);
 }
 
 try {

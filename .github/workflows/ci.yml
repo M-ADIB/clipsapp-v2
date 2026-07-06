@@ -18,6 +18,14 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Placeholder Supabase config: the repo intentionally has no committed
+    # .env, and the Supabase client throws at import time without a URL/key.
+    # Tests and build never contact a real backend.
+    env:
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PROJECT_ID: example
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+      VITE_SUPABASE_ANON_KEY: ci_placeholder
     steps:
       - uses: actions/checkout@v4
 
@@ -49,8 +57,3 @@ jobs:
 
       - name: Build
         run: bun run build
-        env:
-          VITE_SUPABASE_URL: https://example.supabase.co
-          VITE_SUPABASE_PROJECT_ID: example
-          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
-          VITE_SUPABASE_ANON_KEY: ci_placeholder

@@ -37,7 +37,8 @@ const page = await ctx.newPage();
 
 try {
   // Sign in
-  await page.goto(BASE + "/login", { waitUntil: "networkidle", timeout: 45000 });
+  await page.goto(BASE + "/login", { waitUntil: "domcontentloaded", timeout: 45000 });
+  await page.waitForTimeout(2000);
   await page.fill("#login-email", EMAIL);
   await page.fill("#login-password", PASSWORD);
   await page.click('button:has-text("Sign in"), button[type="submit"]');
@@ -45,7 +46,7 @@ try {
   if (page.url().endsWith("/login")) throw new Error("login failed");
 
   // Open team chat and find the Announcements room
-  await page.goto(BASE + "/owner/team-chat", { waitUntil: "networkidle", timeout: 45000 });
+  await page.goto(BASE + "/owner/team-chat", { waitUntil: "domcontentloaded", timeout: 45000 });
   await page.waitForTimeout(2500);
 
   const announcements = page.locator("text=/^announcements$/i").first();
