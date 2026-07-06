@@ -8,6 +8,7 @@ mock.module("@/hooks/use-tenant-settings", () => ({
 
 import { SlackSettingsDialog } from "./SlackSettingsDialog";
 import { ResendSettingsDialog } from "./ResendSettingsDialog";
+import { StripeSettingsDialog } from "./StripeSettingsDialog";
 
 afterEach(() => {
   cleanup();
@@ -35,5 +36,16 @@ describe("ResendSettingsDialog", () => {
     await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(1));
     const payload = updateSettings.mock.calls[0][0] as { resend_api_key: string };
     expect(payload.resend_api_key).toBe("re_abc");
+  });
+});
+
+describe("StripeSettingsDialog", () => {
+  it("saves stripe keys on submit", async () => {
+    render(<StripeSettingsDialog open onOpenChange={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/Publishable Key/i), { target: { value: "pk_live_x" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save Settings/i }));
+    await waitFor(() => expect(updateSettings).toHaveBeenCalledTimes(1));
+    const payload = updateSettings.mock.calls[0][0] as { stripe_public_key: string };
+    expect(payload.stripe_public_key).toBe("pk_live_x");
   });
 });

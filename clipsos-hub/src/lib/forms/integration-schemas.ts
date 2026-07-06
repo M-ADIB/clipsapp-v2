@@ -14,6 +14,14 @@ export const resendSettingsSchema = z.object({
 });
 export type ResendSettingsValues = z.infer<typeof resendSettingsSchema>;
 
+/** Stripe integration settings. All keys optional (empty clears the config). */
+export const stripeSettingsSchema = z.object({
+  publicKey: z.string(),
+  secretKey: z.string(),
+  webhookSecret: z.string(),
+});
+export type StripeSettingsValues = z.infer<typeof stripeSettingsSchema>;
+
 /** Calendly settings — API key required, event filter optional. */
 export const calendlySettingsSchema = z.object({
   apiKey: z.string().trim().min(1, "Please enter your Calendly API key."),
