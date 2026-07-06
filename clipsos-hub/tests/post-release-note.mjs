@@ -38,12 +38,17 @@ const page = await ctx.newPage();
 try {
   // Sign in
   await page.goto(BASE + "/login", { waitUntil: "domcontentloaded", timeout: 45000 });
+  await page.waitForTimeout(2500);
+  // reload once so a cold dev server has finished compiling and React has
+  // hydrated the form (clicking pre-hydration submits the form natively)
+  await page.goto(BASE + "/login", { waitUntil: "domcontentloaded", timeout: 45000 });
+  await page.waitForSelector("#login-email", { timeout: 30000 });
   await page.waitForTimeout(2000);
   await page.fill("#login-email", EMAIL);
   await page.fill("#login-password", PASSWORD);
   await page.click('button:has-text("Sign in"), button[type="submit"]');
-  await page.waitForTimeout(5000);
-  if (page.url().endsWith("/login")) throw new Error("login failed");
+  await page.waitForTimeout(6000);
+  if (new URL(page.url()).pathname === "/login") throw new Error("login failed");
 
   // Open team chat and find the Announcements room
   await page.goto(BASE + "/owner/team-chat", { waitUntil: "domcontentloaded", timeout: 45000 });

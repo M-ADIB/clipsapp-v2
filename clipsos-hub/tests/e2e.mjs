@@ -61,12 +61,18 @@ async function go(path) {
 
 try {
   // ---- 1. Login via the migrated RHF+zod form ----
+  // Warm-up visit first: on a cold dev server the first compile is slow and
+  // clicking before React hydrates triggers a native GET form submission.
   await go("/login");
+  await go("/login");
+  await page.waitForSelector("#login-email", { timeout: 30000 });
+  await page.waitForTimeout(2000);
   await page.fill("#login-email", EMAIL);
   await page.fill("#login-password", PASSWORD);
   await page.click('button:has-text("Sign in"), button[type="submit"]');
-  await page.waitForTimeout(5000);
-  step("login (RHF+zod form) redirects to dashboard", !page.url().endsWith("/login"), page.url());
+  await page.waitForTimeout(6000);
+  const loginPath = new URL(page.url()).pathname;
+  step("login (RHF+zod form) redirects to dashboard", loginPath !== "/login", page.url());
   await shot("dashboard");
 
   // ---- 2. Core owner surfaces render without console errors ----
