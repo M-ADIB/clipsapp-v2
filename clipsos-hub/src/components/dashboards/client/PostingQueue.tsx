@@ -4,7 +4,7 @@
  * Tabs (Review | Up Next | Scheduled | Posted) live in the universal
  * TopNav header via WorkspaceContext — no in-page heading.
  */
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -13,8 +13,14 @@ import { useGridRows } from "@/components/grid/core/useGridRows";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
-import { PostingCalendar } from "./PostingCalendar";
 import { formatDate } from "@/lib/format";
+
+// FullCalendar (core + daygrid + timegrid + interaction) is heavy and only
+// needed on the Calendar tab, which is never the default. Defer its chunk
+// until the user actually opens that tab.
+const PostingCalendar = lazy(() =>
+  import("./PostingCalendar").then((m) => ({ default: m.PostingCalendar })),
+);
 
 type Tab = "review" | "next" | "scheduled" | "posted" | "calendar";
 
@@ -84,7 +90,15 @@ export function PostingQueue() {
   return (
     <FullBleed className="flex flex-col h-full overflow-hidden">
       {tab === "calendar" ? (
-        <PostingCalendar embedded={true} active={tab === "calendar"} />
+        <Suspense
+          fallback={
+            <div className="flex-1 flex items-center justify-center px-3 py-5 text-sm text-foreground-muted">
+              Loading calendar…
+            </div>
+          }
+        >
+          <PostingCalendar embedded={true} active={tab === "calendar"} />
+        </Suspense>
       ) : (
         <div className="flex-1 overflow-auto px-3 py-5 md:px-5 md:py-6">
           {isLoading ? (
