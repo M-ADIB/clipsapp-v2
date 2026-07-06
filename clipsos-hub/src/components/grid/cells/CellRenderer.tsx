@@ -9,7 +9,7 @@
  */
 import { format } from "date-fns";
 import { CalendarIcon, ExternalLink, Star, Expand } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { memo, useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -70,8 +70,10 @@ function getReadMuted(density?: string) {
 }
 
 function getEditInput(density?: string) {
-  if (density === "compact") return "h-full w-full border-0 bg-transparent px-3 py-0.5 text-xs shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0";
-  if (density === "comfortable") return "h-full w-full border-0 bg-transparent px-3 py-2 text-base shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0";
+  if (density === "compact")
+    return "h-full w-full border-0 bg-transparent px-3 py-0.5 text-xs shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0";
+  if (density === "comfortable")
+    return "h-full w-full border-0 bg-transparent px-3 py-2 text-base shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0";
   return "h-full w-full border-0 bg-transparent px-3 py-1 text-sm shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:ring-offset-0";
 }
 
@@ -109,7 +111,12 @@ function TextCell({ value, isEditing, isReadOnly, density, onCommit, onCancel }:
     );
   }
   return (
-    <div className={cn(value ? getReadClass(density) : getReadMuted(density), !isReadOnly && "cursor-text")}>
+    <div
+      className={cn(
+        value ? getReadClass(density) : getReadMuted(density),
+        !isReadOnly && "cursor-text",
+      )}
+    >
       {value ? String(value) : "—"}
     </div>
   );
@@ -202,7 +209,11 @@ function LongTextCell({ value, isEditing, isReadOnly, density, onCommit, onCance
   }
   return (
     <div
-      className={cn(value ? getReadClass(density) : getReadMuted(density), "line-clamp-2", !isReadOnly && "cursor-text")}
+      className={cn(
+        value ? getReadClass(density) : getReadMuted(density),
+        "line-clamp-2",
+        !isReadOnly && "cursor-text",
+      )}
       onClick={(e) => {
         // If there's actual content and we're read-only or there's long text, expand it
         if (value && String(value).length > 60) {
@@ -285,7 +296,8 @@ function DateCell({ value, isReadOnly, isEditing, density, onCommit, onCancel }:
     if (!next) onCancel();
   };
 
-  const iconSize = density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
+  const iconSize =
+    density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -330,14 +342,21 @@ function DateCell({ value, isReadOnly, isEditing, density, onCommit, onCancel }:
 
 function SingleSelectCell({ column, value, isReadOnly, density, onCommit }: CellProps) {
   const opts = column.options ?? [];
-  const triggerTextClass = density === "compact" ? "text-xs px-3" : density === "comfortable" ? "text-base px-3" : "text-sm px-3";
+  const triggerTextClass =
+    density === "compact"
+      ? "text-xs px-3"
+      : density === "comfortable"
+        ? "text-base px-3"
+        : "text-sm px-3";
   return (
     <Select
       value={value ? String(value) : undefined}
       onValueChange={(v) => onCommit(v)}
       disabled={isReadOnly}
     >
-      <SelectTrigger className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}>
+      <SelectTrigger
+        className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}
+      >
         <SelectValue placeholder="—" />
       </SelectTrigger>
       <SelectContent>
@@ -368,17 +387,19 @@ function MultiSelectCell({ column, value, isReadOnly, density, onCommit }: CellP
     onCommit(next.join(", "));
   };
 
-  const containerClass = density === "compact"
-    ? "flex h-full flex-wrap items-center gap-0.5 px-3 py-0.5"
-    : density === "comfortable"
-      ? "flex h-full flex-wrap items-center gap-1.5 px-3 py-2"
-      : "flex h-full flex-wrap items-center gap-1 px-3 py-1";
+  const containerClass =
+    density === "compact"
+      ? "flex h-full flex-wrap items-center gap-0.5 px-3 py-0.5"
+      : density === "comfortable"
+        ? "flex h-full flex-wrap items-center gap-1.5 px-3 py-2"
+        : "flex h-full flex-wrap items-center gap-1 px-3 py-1";
 
-  const badgeClass = density === "compact"
-    ? "cursor-pointer text-[9px] px-1 py-0"
-    : density === "comfortable"
-      ? "cursor-pointer text-[11px] px-2 py-0.5"
-      : "cursor-pointer text-[10px] px-1.5 py-0.5";
+  const badgeClass =
+    density === "compact"
+      ? "cursor-pointer text-[9px] px-1 py-0"
+      : density === "comfortable"
+        ? "cursor-pointer text-[11px] px-2 py-0.5"
+        : "cursor-pointer text-[10px] px-1.5 py-0.5";
 
   return (
     <div className={containerClass}>
@@ -404,14 +425,21 @@ function MultiSelectCell({ column, value, isReadOnly, density, onCommit }: CellP
 function StatusCell({ value, isReadOnly, density, onCommit }: CellProps) {
   const { data: statuses } = useStatuses();
   const current = statuses?.find((s) => s.id === value);
-  const triggerTextClass = density === "compact" ? "text-xs px-3" : density === "comfortable" ? "text-base px-3" : "text-sm px-3";
-  const badgeClass = density === "compact"
-    ? "inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[10px] font-medium"
-    : density === "comfortable"
-      ? "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-sm font-medium"
-      : "inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs font-medium";
+  const triggerTextClass =
+    density === "compact"
+      ? "text-xs px-3"
+      : density === "comfortable"
+        ? "text-base px-3"
+        : "text-sm px-3";
+  const badgeClass =
+    density === "compact"
+      ? "inline-flex items-center gap-1 rounded-full px-1.5 py-0 text-[10px] font-medium"
+      : density === "comfortable"
+        ? "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-sm font-medium"
+        : "inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-xs font-medium";
 
-  const dotSize = density === "compact" ? "h-1 w-1" : density === "comfortable" ? "h-2 w-2" : "h-1.5 w-1.5";
+  const dotSize =
+    density === "compact" ? "h-1 w-1" : density === "comfortable" ? "h-2 w-2" : "h-1.5 w-1.5";
 
   return (
     <Select
@@ -419,7 +447,9 @@ function StatusCell({ value, isReadOnly, density, onCommit }: CellProps) {
       onValueChange={onCommit}
       disabled={isReadOnly}
     >
-      <SelectTrigger className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}>
+      <SelectTrigger
+        className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}
+      >
         <span
           className={badgeClass}
           style={{
@@ -456,12 +486,18 @@ function StatusCell({ value, isReadOnly, density, onCommit }: CellProps) {
 function VideoTypeCell({ value, isReadOnly, density, onCommit }: CellProps) {
   const { data: types } = useVideoTypes();
   const current = types?.find((t) => t.id === value);
-  const triggerTextClass = density === "compact" ? "text-xs px-3" : density === "comfortable" ? "text-base px-3" : "text-sm px-3";
-  const badgeClass = density === "compact"
-    ? "text-[10px] px-1 py-0"
-    : density === "comfortable"
-      ? "text-xs px-2 py-0.5"
-      : "text-[11px] px-1.5 py-0.5";
+  const triggerTextClass =
+    density === "compact"
+      ? "text-xs px-3"
+      : density === "comfortable"
+        ? "text-base px-3"
+        : "text-sm px-3";
+  const badgeClass =
+    density === "compact"
+      ? "text-[10px] px-1 py-0"
+      : density === "comfortable"
+        ? "text-xs px-2 py-0.5"
+        : "text-[11px] px-1.5 py-0.5";
 
   return (
     <Select
@@ -469,7 +505,9 @@ function VideoTypeCell({ value, isReadOnly, density, onCommit }: CellProps) {
       onValueChange={onCommit}
       disabled={isReadOnly}
     >
-      <SelectTrigger className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}>
+      <SelectTrigger
+        className={cn("h-full rounded-none border-0 bg-transparent focus:ring-1", triggerTextClass)}
+      >
         <Badge variant="outline" className={badgeClass}>
           {current?.display_name ?? "—"}
         </Badge>
@@ -517,7 +555,12 @@ function ReviewCell({ row, value, isReadOnly, density }: CellProps) {
 function EditorsCell({ value, isReadOnly, density, onCommit }: CellProps) {
   const ids: string[] = Array.isArray(value) ? (value as string[]) : [];
   return (
-    <EditorsCellInner value={ids} isReadOnly={isReadOnly} onCommit={(next) => onCommit(next)} density={density} />
+    <EditorsCellInner
+      value={ids}
+      isReadOnly={isReadOnly}
+      onCommit={(next) => onCommit(next)}
+      density={density}
+    />
   );
 }
 
@@ -529,8 +572,14 @@ function UrlCell(props: CellProps) {
   const { value, isEditing, density } = props;
   if (isEditing) return <TextCell {...props} />;
   if (!value) return <div className={getReadMuted(density)}>—</div>;
-  const linkTextClass = density === "compact" ? "text-xs px-3" : density === "comfortable" ? "text-base px-3" : "text-sm px-3";
-  const iconSize = density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
+  const linkTextClass =
+    density === "compact"
+      ? "text-xs px-3"
+      : density === "comfortable"
+        ? "text-base px-3"
+        : "text-sm px-3";
+  const iconSize =
+    density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
   return (
     <a
       href={String(value)}
@@ -549,7 +598,12 @@ function EmailCell(props: CellProps) {
   const { value, isEditing, density } = props;
   if (isEditing) return <TextCell {...props} />;
   if (!value) return <div className={getReadMuted(density)}>—</div>;
-  const linkTextClass = density === "compact" ? "text-xs px-3 py-0.5" : density === "comfortable" ? "text-base px-3 py-2" : "text-sm px-3 py-1";
+  const linkTextClass =
+    density === "compact"
+      ? "text-xs px-3 py-0.5"
+      : density === "comfortable"
+        ? "text-base px-3 py-2"
+        : "text-sm px-3 py-1";
   return (
     <a
       href={`mailto:${String(value)}`}
@@ -565,7 +619,12 @@ function PhoneCell(props: CellProps) {
   const { value, isEditing, density } = props;
   if (isEditing) return <TextCell {...props} />;
   if (!value) return <div className={getReadMuted(density)}>—</div>;
-  const linkTextClass = density === "compact" ? "text-xs px-3 py-0.5" : density === "comfortable" ? "text-base px-3 py-2" : "text-sm px-3 py-1";
+  const linkTextClass =
+    density === "compact"
+      ? "text-xs px-3 py-0.5"
+      : density === "comfortable"
+        ? "text-base px-3 py-2"
+        : "text-sm px-3 py-1";
   return (
     <a
       href={`tel:${String(value)}`}
@@ -596,8 +655,10 @@ function YesNoCell({ value, isReadOnly, onCommit }: CellProps) {
 
 function RatingCell({ value, isReadOnly, density, onCommit }: CellProps) {
   const n = typeof value === "number" ? value : value ? Number(value) : 0;
-  const starSize = density === "compact" ? "h-3 w-3" : density === "comfortable" ? "h-4 w-4" : "h-3.5 w-3.5";
-  const containerClass = density === "compact" ? "px-2" : density === "comfortable" ? "px-4" : "px-3";
+  const starSize =
+    density === "compact" ? "h-3 w-3" : density === "comfortable" ? "h-4 w-4" : "h-3.5 w-3.5";
+  const containerClass =
+    density === "compact" ? "px-2" : density === "comfortable" ? "px-4" : "px-3";
   return (
     <div className={cn("flex h-full items-center gap-0.5", containerClass)}>
       {[1, 2, 3, 4, 5].map((i) => (
@@ -618,13 +679,16 @@ function RatingCell({ value, isReadOnly, density, onCommit }: CellProps) {
 function ProgressCell({ value, density }: CellProps) {
   const n = typeof value === "number" ? value : value ? Number(value) : 0;
   const pct = Math.max(0, Math.min(100, n));
-  const containerClass = density === "compact" ? "px-2" : density === "comfortable" ? "px-4" : "px-3";
-  const textClass = density === "compact"
-    ? "w-8 text-right text-[10px] tabular-nums text-foreground-muted"
-    : density === "comfortable"
-      ? "w-12 text-right text-sm tabular-nums text-foreground-muted"
-      : "w-10 text-right text-xs tabular-nums text-foreground-muted";
-  const progressHeight = density === "compact" ? "h-1" : density === "comfortable" ? "h-2" : "h-1.5";
+  const containerClass =
+    density === "compact" ? "px-2" : density === "comfortable" ? "px-4" : "px-3";
+  const textClass =
+    density === "compact"
+      ? "w-8 text-right text-[10px] tabular-nums text-foreground-muted"
+      : density === "comfortable"
+        ? "w-12 text-right text-sm tabular-nums text-foreground-muted"
+        : "w-10 text-right text-xs tabular-nums text-foreground-muted";
+  const progressHeight =
+    density === "compact" ? "h-1" : density === "comfortable" ? "h-2" : "h-1.5";
   return (
     <div className={cn("flex h-full items-center gap-2", containerClass)}>
       <div className={cn("flex-1 overflow-hidden rounded-full bg-surface-raised", progressHeight)}>
@@ -637,8 +701,14 @@ function ProgressCell({ value, density }: CellProps) {
 
 function FileCell({ value, density }: CellProps) {
   if (!value) return <div className={getReadMuted(density)}>—</div>;
-  const textClass = density === "compact" ? "text-xs px-3" : density === "comfortable" ? "text-base px-3" : "text-sm px-3";
-  const iconSize = density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
+  const textClass =
+    density === "compact"
+      ? "text-xs px-3"
+      : density === "comfortable"
+        ? "text-base px-3"
+        : "text-sm px-3";
+  const iconSize =
+    density === "compact" ? "h-2.5 w-2.5" : density === "comfortable" ? "h-3.5 w-3.5" : "h-3 w-3";
   return (
     <a
       href={String(value)}
@@ -654,14 +724,20 @@ function FileCell({ value, density }: CellProps) {
 
 function ImageCell({ value, density }: CellProps) {
   if (!value) {
-    const size = density === "compact" ? "h-3.5 w-3.5" : density === "comfortable" ? "h-6 w-6" : "h-4 w-4";
+    const size =
+      density === "compact" ? "h-3.5 w-3.5" : density === "comfortable" ? "h-6 w-6" : "h-4 w-4";
     return (
       <div className="flex h-full items-center justify-center">
         <div className={cn("rounded-sm bg-foreground/[0.08]", size)} />
       </div>
     );
   }
-  const size = density === "compact" ? "h-8 w-8 rounded-sm" : density === "comfortable" ? "h-16 w-16 rounded-md" : "h-10 w-10 rounded";
+  const size =
+    density === "compact"
+      ? "h-8 w-8 rounded-sm"
+      : density === "comfortable"
+        ? "h-16 w-16 rounded-md"
+        : "h-10 w-10 rounded";
   return (
     <div className="flex h-full items-center justify-center">
       <img src={String(value)} alt="" className={cn("object-cover", size)} loading="lazy" />
@@ -669,13 +745,34 @@ function ImageCell({ value, density }: CellProps) {
   );
 }
 
-
-
 /* ------------------------------------------------------------------ */
 /* Factory                                                             */
 /* ------------------------------------------------------------------ */
 
-export function CellRenderer(props: CellProps) {
+/**
+ * Memo comparator: re-render only when the cell's *data* props change, not when
+ * the parent hands down freshly-created callback closures each render.
+ *
+ * Safe because the callbacks (onCommit/onCancel/onBeginEdit) only act on this
+ * cell's own row+column, both of which ARE data props — and grid rows are
+ * immutable (TanStack Query returns new objects on change), so any change to
+ * this row yields a new `row` reference and forces a re-render. Skipping a
+ * render therefore never leaves a stale callback that could write the wrong
+ * data. Internal hook updates (useStatuses/useVideoTypes) still re-render
+ * normally; React.memo only gates parent-driven renders.
+ */
+export function areCellPropsEqual(prev: CellProps, next: CellProps): boolean {
+  return (
+    prev.column === next.column &&
+    prev.value === next.value &&
+    prev.row === next.row &&
+    prev.isEditing === next.isEditing &&
+    prev.isReadOnly === next.isReadOnly &&
+    prev.density === next.density
+  );
+}
+
+function CellRendererImpl(props: CellProps) {
   switch (props.column.type) {
     case "text":
       return <TextCell {...props} />;
@@ -725,3 +822,10 @@ export function CellRenderer(props: CellProps) {
     }
   }
 }
+
+/**
+ * Memoized cell — skips re-render when only the parent's callback closures
+ * changed (see `areCellPropsEqual`). Caps re-render churn from grid-level
+ * state changes (selection, other cells' edits) on top of row virtualization.
+ */
+export const CellRenderer = memo(CellRendererImpl, areCellPropsEqual);
