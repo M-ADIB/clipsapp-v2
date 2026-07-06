@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGridRows } from "@/components/grid/core/useGridRows";
 import { useGridMutations } from "@/components/grid/core/useGridMutations";
 import { BUILTIN_COLUMNS } from "@/components/grid/core/builtinColumns";
-import { VideoPreviewModal } from "@/components/video/preview";
+import { VideoPreviewModal } from "@/components/video/preview/VideoPreviewModalLazy";
 
 function renderEventContent(eventInfo: any) {
   const title = eventInfo.event.title;

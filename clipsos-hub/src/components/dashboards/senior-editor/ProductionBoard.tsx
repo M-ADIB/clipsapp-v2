@@ -15,7 +15,7 @@ import { useTeam } from "@/hooks/use-team";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { VideoPreviewModal } from "@/components/video/preview";
+import { VideoPreviewModal } from "@/components/video/preview/VideoPreviewModalLazy";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import {
   Bookmark,

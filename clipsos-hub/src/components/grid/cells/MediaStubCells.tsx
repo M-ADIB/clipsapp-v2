@@ -15,7 +15,7 @@ import { Image as ImageIcon, Loader2, MessageSquare, Play, Upload } from "lucide
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { VideoPreviewModal } from "@/components/video/preview";
+import { VideoPreviewModal } from "@/components/video/preview/VideoPreviewModalLazy";
 import { ThumbnailPreviewDialog } from "@/components/video/thumbnail";
 import { useThumbnailVersions } from "@/components/video/thumbnail/hooks/use-thumbnail-versions";
 import { useUploadThumbnail } from "@/components/video/thumbnail/hooks/use-upload-thumbnail";
