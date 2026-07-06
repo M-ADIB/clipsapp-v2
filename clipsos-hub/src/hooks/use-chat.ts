@@ -407,106 +407,14 @@ export function useDeleteMessage() {
   });
 }
 
-export function useReactToMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
-      const { data: existing } = await supabase
-        .from("chat_reactions")
-        .select("id")
-        .eq("message_id", messageId)
-        .eq("user_id", user!.id)
-        .eq("emoji", emoji)
-        .maybeSingle();
-      if (existing) {
-        await supabase.from("chat_reactions").delete().eq("id", existing.id);
-        return { action: "removed" as const };
-      }
-      await supabase.from("chat_reactions").insert({
-        message_id: messageId,
-        user_id: user!.id,
-        emoji,
-        tenant_id: tenantId!,
-      });
-      return { action: "added" as const };
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["chat", "messages", tenantId], exact: false });
-    },
-  });
-}
-
-export function useMarkAsRead() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (threadId: string) => {
-      await supabase.from("chat_read_receipts").upsert(
-        {
-          thread_id: threadId,
-          user_id: user!.id,
-          last_read_at: new Date().toISOString(),
-          tenant_id: tenantId!,
-        },
-        { onConflict: "thread_id,user_id" },
-      );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.unreadCounts(tenantId!) });
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export type MuteDuration = "1h" | "8h" | "1d" | "forever" | "unmute";
-
-export function useMuteRoom() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ roomId, duration }: { roomId: string; duration: MuteDuration }) => {
-      if (duration === "unmute") {
-        await supabase.from("chat_mutes").delete().eq("room_id", roomId).eq("user_id", user!.id);
-        return;
-      }
-
-      let muted_until: string | null = null;
-      if (duration !== "forever") {
-        const hours = duration === "1h" ? 1 : duration === "8h" ? 8 : 24;
-        const until = new Date();
-        until.setHours(until.getHours() + hours);
-        muted_until = until.toISOString();
-      }
-
-      await supabase
-        .from("chat_mutes")
-        .upsert(
-          { room_id: roomId, user_id: user!.id, tenant_id: tenantId!, muted_until },
-          { onConflict: "room_id,user_id" },
-        );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.chat.rooms(tenantId!) });
-    },
-  });
-}
-
-export function useUploadChatAttachment() {
-  const { tenantId, user } = useAuth();
-  return useMutation({
-    mutationFn: async (file: File) => {
-      const ext = file.name.split(".").pop() ?? "bin";
-      const path = `${tenantId}/${user!.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("chat-attachments")
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(path);
-      return { url: urlData.publicUrl, type: file.type, name: file.name, size: file.size };
-    },
-  });
-}
+// ── Reactions / read / mute / attachments (moved to use-chat-reactions.ts) ───
+export {
+  useReactToMessage,
+  useMarkAsRead,
+  useMuteRoom,
+  useUploadChatAttachment,
+  type MuteDuration,
+} from "./use-chat-reactions";
 
 // ── Room management ─────────────────────────────────────────────────────────
 
@@ -943,93 +851,10 @@ export function useForwardMessage() {
   });
 }
 
-// ── Pinning ─────────────────────────────────────────────────────────────────
-
-export interface PinnedMessage {
-  id: string;
-  message_id: string;
-  room_id: string;
-  pinned_by: string;
-  created_at: string;
-  message: {
-    id: string;
-    content: string | null;
-    sender_id: string;
-    created_at: string;
-    sender: { id: string; full_name: string | null; avatar_url: string | null } | null;
-  };
-}
-
-export function usePinnedMessages(roomId: string | null) {
-  const { tenantId } = useAuth();
-  return useQuery({
-    queryKey: queryKeys.chat.pinnedMessages(tenantId!, roomId!),
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chat_pinned_messages" as never)
-        .select(
-          `
-          id, message_id, room_id, pinned_by, created_at,
-          message:chat_messages!chat_pinned_messages_message_id_fkey(
-            id, content, sender_id, created_at,
-            sender:profiles!chat_messages_sender_id_fkey(id, full_name, avatar_url)
-          )
-        ` as never,
-        )
-        .eq("room_id" as never, roomId!)
-        .eq("tenant_id" as never, tenantId!)
-        .order("created_at" as never, { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as PinnedMessage[];
-    },
-    enabled: !!tenantId && !!roomId,
-    staleTime: 30_000,
-  });
-}
-
-export function usePinMessage() {
-  const { tenantId, user } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, roomId }: { messageId: string; roomId: string }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.from as any)("chat_pinned_messages")
-        .insert({
-          message_id: messageId,
-          room_id: roomId,
-          tenant_id: tenantId!,
-          pinned_by: user!.id,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (_data, input) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.pinnedMessages(tenantId!, input.roomId),
-      });
-    },
-  });
-}
-
-export function useUnpinMessage() {
-  const { tenantId } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ messageId, roomId }: { messageId: string; roomId: string }) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from as any)("chat_pinned_messages")
-        .delete()
-        .eq("message_id", messageId)
-        .eq("tenant_id", tenantId!);
-      if (error) throw error;
-      return { roomId };
-    },
-    onSuccess: (_data, input) => {
-      qc.invalidateQueries({
-        queryKey: queryKeys.chat.pinnedMessages(tenantId!, input.roomId),
-      });
-    },
-  });
-}
+// ── Pinning (moved to use-chat-pins.ts; re-exported for compatibility) ───────
+export {
+  usePinnedMessages,
+  usePinMessage,
+  useUnpinMessage,
+  type PinnedMessage,
+} from "./use-chat-pins";
