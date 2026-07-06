@@ -34,3 +34,16 @@ export const recordPaymentSchema = z.object({
 });
 
 export type RecordPaymentValues = z.infer<typeof recordPaymentSchema>;
+
+/** Schema for the Stripe payment-link dialog. */
+export const paymentLinkSchema = z.object({
+  clientId: z.string().min(1, "Client is required"),
+  amount: z.string().refine((v) => {
+    const n = parseFloat(v);
+    return !Number.isNaN(n) && n > 0;
+  }, "Enter a valid amount"),
+  currency: z.string(),
+  description: z.string(),
+});
+
+export type PaymentLinkValues = z.infer<typeof paymentLinkSchema>;

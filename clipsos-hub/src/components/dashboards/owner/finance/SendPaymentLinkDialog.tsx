@@ -3,6 +3,8 @@
  * Calls the stripe-actions Edge Function with action=create-payment-link.
  */
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,8 @@ import { useCreatePaymentLink } from "@/hooks/use-stripe-actions";
 import { toast } from "sonner";
 import { Copy, ExternalLink, Check } from "lucide-react";
 
+import { paymentLinkSchema, type PaymentLinkValues } from "@/lib/forms/finance-schemas";
+
 interface SendPaymentLinkDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,52 +44,48 @@ export function SendPaymentLinkDialog({
   const { data: clients = [] } = useClients();
   const createLink = useCreatePaymentLink();
 
-  const [clientId, setClientId] = useState(preselectedClientId ?? "");
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [currency, setCurrency] = useState("aed");
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const reset = () => {
-    setClientId(preselectedClientId ?? "");
-    setAmount("");
-    setDescription("");
-    setCurrency("aed");
+  const defaults = (): PaymentLinkValues => ({
+    clientId: preselectedClientId ?? "",
+    amount: "",
+    currency: "aed",
+    description: "",
+  });
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<PaymentLinkValues>({
+    resolver: zodResolver(paymentLinkSchema),
+    defaultValues: defaults(),
+  });
+
+  const resetAll = () => {
+    reset(defaults());
     setGeneratedUrl(null);
     setCopied(false);
   };
 
-  const handleGenerate = () => {
-    if (!clientId || !amount) {
-      toast.error("Client and amount are required");
-      return;
-    }
-
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-
-    // Convert AED to cents
-    const amountCents = Math.round(numAmount * 100);
-
+  const onSubmit = (values: PaymentLinkValues) => {
+    const amountCents = Math.round(parseFloat(values.amount) * 100);
     createLink.mutate(
       {
-        client_id: clientId,
+        client_id: values.clientId,
         amount: amountCents,
-        currency,
-        description: description || "Payment",
+        currency: values.currency,
+        description: values.description || "Payment",
       },
       {
         onSuccess: (result) => {
           setGeneratedUrl(result.payment_link_url);
           toast.success("Payment link created!");
         },
-        onError: (err) => {
-          toast.error(`Failed: ${err.message}`);
-        },
+        onError: (err) => toast.error(`Failed: ${err.message}`),
       },
     );
   };
@@ -102,7 +102,7 @@ export function SendPaymentLinkDialog({
     <Dialog
       open={open}
       onOpenChange={(v) => {
-        if (!v) reset();
+        if (!v) resetAll();
         onOpenChange(v);
       }}
     >
@@ -136,7 +136,7 @@ export function SendPaymentLinkDialog({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => reset()}>
+              <Button variant="outline" onClick={resetAll}>
                 Create Another
               </Button>
               <Button onClick={() => onOpenChange(false)}>Done</Button>
@@ -144,79 +144,100 @@ export function SendPaymentLinkDialog({
           </div>
         ) : (
           /* ── Form state ── */
-          <div className="space-y-4 py-2">
-            {/* Client */}
-            <div className="space-y-1.5">
-              <Label htmlFor="spl-client">Client</Label>
-              <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger id="spl-client">
-                  <SelectValue placeholder="Select client…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="space-y-4 py-2">
+              {/* Client */}
+              <div className="space-y-1.5">
+                <Label htmlFor="spl-client">Client</Label>
+                <Controller
+                  control={control}
+                  name="clientId"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="spl-client" aria-invalid={!!errors.clientId}>
+                        <SelectValue placeholder="Select client…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.clientId && (
+                  <p className="text-xs text-status-danger" role="alert">
+                    {errors.clientId.message}
+                  </p>
+                )}
+              </div>
 
-            {/* Amount + Currency */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-1.5">
-                <Label htmlFor="spl-amount">Amount</Label>
+              {/* Amount + Currency */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label htmlFor="spl-amount">Amount</Label>
+                  <Input
+                    id="spl-amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="5,000.00"
+                    aria-invalid={!!errors.amount}
+                    {...register("amount")}
+                  />
+                  {errors.amount && (
+                    <p className="text-xs text-status-danger" role="alert">
+                      {errors.amount.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Currency</Label>
+                  <Controller
+                    control={control}
+                    name="currency"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="aed">AED</SelectItem>
+                          <SelectItem value="usd">USD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label htmlFor="spl-desc">Description</Label>
                 <Input
-                  id="spl-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="5,000.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  id="spl-desc"
+                  placeholder="Monthly retainer, project fee, etc."
+                  {...register("description")}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Currency</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aed">AED</SelectItem>
-                    <SelectItem value="usd">USD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            {/* Description */}
-            <div className="space-y-1.5">
-              <Label htmlFor="spl-desc">Description</Label>
-              <Input
-                id="spl-desc"
-                placeholder="Monthly retainer, project fee, etc."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={createLink.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createLink.isPending}>
+                  {createLink.isPending ? "Generating…" : "Generate Link"}
+                </Button>
+              </DialogFooter>
             </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={createLink.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={createLink.isPending || !clientId || !amount}
-              >
-                {createLink.isPending ? "Generating…" : "Generate Link"}
-              </Button>
-            </DialogFooter>
-          </div>
+          </form>
         )}
       </DialogContent>
     </Dialog>
