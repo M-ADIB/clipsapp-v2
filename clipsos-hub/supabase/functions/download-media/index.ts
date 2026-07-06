@@ -120,7 +120,14 @@ Deno.serve(async (req) => {
       videoId = tokenVideoId;
       supabase = createClient(supabaseUrl, serviceKey);
     } else {
-      const authHeader = req.headers.get("Authorization");
+      // TRANSITIONAL (remove after the dlToken frontend is fully rolled out):
+      // the previous frontend passes the session JWT as `?token=` on the
+      // streaming iframe request. Honor it like an Authorization header so
+      // downloads keep working during the rollover — it is validated with
+      // auth.getUser and scoped by RLS exactly like the header path.
+      const legacyToken = url.searchParams.get("token");
+      const authHeader =
+        req.headers.get("Authorization") ?? (legacyToken ? `Bearer ${legacyToken}` : null);
       if (!authHeader?.startsWith("Bearer ")) {
         return jsonError("Unauthorized — no token provided", 401);
       }
