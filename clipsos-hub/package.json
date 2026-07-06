@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "bun test src/",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:smoke": "node tests/smoke.mjs"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
