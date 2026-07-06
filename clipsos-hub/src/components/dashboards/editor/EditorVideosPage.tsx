@@ -22,6 +22,7 @@ import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { useStatuses } from "@/hooks/use-lookups";
 import { useEditorVideos, useEditorUpdateVideoStatus } from "@/hooks/use-editor-videos";
 import { DataTable, StatusBadge, type DataTableColumn } from "@/components/dashboard";
+import { PRIORITY_STYLES } from "@/components/dashboards/shared/priority-styles";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -69,28 +70,6 @@ function slugToVariant(slug: string | undefined): StatusVariant {
   return SLUG_TO_VARIANT[slug] ?? "draft";
 }
 
-const PRIORITY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  high: {
-    bg: "color-mix(in srgb, var(--status-danger) 15%, transparent)",
-    text: "var(--status-danger)",
-    label: "High",
-  },
-  medium: {
-    bg: "color-mix(in srgb, var(--status-warning) 15%, transparent)",
-    text: "var(--status-warning)",
-    label: "Medium",
-  },
-  low: {
-    bg: "color-mix(in srgb, var(--foreground) 6%, transparent)",
-    text: "var(--foreground-muted)",
-    label: "Low",
-  },
-  normal: {
-    bg: "color-mix(in srgb, var(--foreground) 6%, transparent)",
-    text: "var(--foreground-muted)",
-    label: "Normal",
-  },
-};
 
 /* ------------------------------------------------------------------ */
 /* Component                                                           */
