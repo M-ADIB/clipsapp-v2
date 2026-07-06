@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useUpdatePassword } from "@/hooks/use-update-password";
 import { toast } from "sonner";
 import { User, Lock, Mail, Shield, LogOut } from "lucide-react";
 import { ROLE_LABEL } from "@/integrations/supabase/db-types";
@@ -33,6 +33,7 @@ export function PersonalSettingsPage({ embedded }: PersonalSettingsPageProps) {
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  const updatePassword = useUpdatePassword();
 
   const handlePasswordChange = async () => {
     if (newPw !== confirmPw) {
@@ -44,15 +45,16 @@ export function PersonalSettingsPage({ embedded }: PersonalSettingsPageProps) {
       return;
     }
     setChangingPw(true);
-    const { error } = await supabase.auth.updateUser({ password: newPw });
-    setChangingPw(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      await updatePassword.mutateAsync(newPw);
       toast.success("Password updated successfully");
       setCurrentPw("");
       setNewPw("");
       setConfirmPw("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update password");
+    } finally {
+      setChangingPw(false);
     }
   };
 
