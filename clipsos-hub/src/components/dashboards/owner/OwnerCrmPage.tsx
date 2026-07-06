@@ -32,6 +32,7 @@ import { useDashboardView, type DashboardColumn } from "@/components/dashboard/u
 import { DashboardColumnsPopover } from "@/components/dashboard/DashboardColumnsPopover";
 import { DashboardFilterPopover } from "@/components/dashboard/DashboardFilterPopover";
 import { DashboardSortPopover } from "@/components/dashboard/DashboardSortPopover";
+import { formatDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /* Types & Constants                                                   */
@@ -152,15 +153,6 @@ export function OwnerCrmPage() {
     },
     [navigate, role],
   );
-
-  function formatDate(iso: string | null): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
 
   return (
     <FullBleed className="crm-wrap">

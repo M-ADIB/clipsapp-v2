@@ -24,6 +24,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+const formatFileSize = formatBytes;
 
 interface UploadDropzoneProps {
   /** The video record to upload a version for */
@@ -38,12 +40,6 @@ interface UploadDropzoneProps {
   onOpenChange?: (open: boolean) => void;
   /** Called when file(s) are queued for upload */
   onFilesQueued?: (jobIds: string[]) => void;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function totalSize(files: File[]): string {

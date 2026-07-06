@@ -9,6 +9,7 @@
  */
 import { useMemo } from "react";
 import { useClientFinance } from "@/hooks/data";
+import { formatDate } from "@/lib/format";
 import {
   Loader2,
   TrendingUp,
@@ -40,15 +41,6 @@ function formatCurrency(amount: number, currency = "USD"): string {
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function timeAgo(iso: string): string {

@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PostingCalendar } from "./PostingCalendar";
+import { formatDate } from "@/lib/format";
 
 type Tab = "review" | "next" | "scheduled" | "posted" | "calendar";
 
@@ -163,13 +164,4 @@ function QueueCard({
       ) : null}
     </li>
   );
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }

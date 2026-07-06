@@ -10,6 +10,7 @@ import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
 import { useTasks, useCreateTask, useUpdateTask } from "@/hooks/data";
 import { useAuth } from "@/contexts/AuthContext";
 import { StatusBadge } from "@/components/dashboard";
+import { formatDate } from "@/lib/format";
 import {
   Plus,
   Search,
@@ -64,19 +65,6 @@ interface TaskItem {
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const now = new Date();
-  const diff = d.getTime() - now.getTime();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  if (days < 0) return `${Math.abs(days)}d overdue`;
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 function isOverdue(iso: string | null): boolean {
   if (!iso) return false;

@@ -30,6 +30,7 @@ import { useDashboardView, type DashboardColumn } from "@/components/dashboard/u
 import { DashboardColumnsPopover } from "@/components/dashboard/DashboardColumnsPopover";
 import { DashboardFilterPopover } from "@/components/dashboard/DashboardFilterPopover";
 import { DashboardSortPopover } from "@/components/dashboard/DashboardSortPopover";
+import { formatDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -92,13 +93,6 @@ function getStageVariant(stage: string): "approved" | "pending" | "posted" | "in
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 /* ------------------------------------------------------------------ */
 /* Sub-components                                                      */
@@ -231,7 +225,7 @@ export function PipelineDashboard() {
         (d) => d.name.toLowerCase().includes(q) || d.personName.toLowerCase().includes(q),
       );
     }
-    
+
     const stageFilters = dashView.filters.stage;
     if (stageFilters && stageFilters.length > 0) {
       rows = rows.filter((d) => stageFilters.includes(d.stage));
@@ -489,7 +483,9 @@ export function PipelineDashboard() {
                   <th className="w-10 border-b border-border px-3 py-2 text-center">
                     <input
                       type="checkbox"
-                      checked={selectedRows.size === filteredDeals.length && filteredDeals.length > 0}
+                      checked={
+                        selectedRows.size === filteredDeals.length && filteredDeals.length > 0
+                      }
                       onChange={toggleAll}
                       className="h-3.5 w-3.5 cursor-pointer appearance-none rounded-sm border border-border-strong bg-transparent checked:bg-primary"
                     />
@@ -510,12 +506,17 @@ export function PipelineDashboard() {
               <tbody>
                 {filteredDeals.length === 0 && (
                   <tr>
-                    <td colSpan={dashView.visibleColumns.length + 1} className="px-4 py-16 text-center">
+                    <td
+                      colSpan={dashView.visibleColumns.length + 1}
+                      className="px-4 py-16 text-center"
+                    >
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-raised">
                           <DollarSign className="h-5 w-5 text-foreground-muted" />
                         </div>
-                        <p className="text-sm text-foreground-muted">No deals in the pipeline yet.</p>
+                        <p className="text-sm text-foreground-muted">
+                          No deals in the pipeline yet.
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -565,7 +566,9 @@ export function PipelineDashboard() {
                       )}
                       {show("totalVideos") && (
                         <td className="border-b border-border/50 px-3 py-2.5">
-                          <span className="text-xs text-foreground-muted">{deal.totalVideos || "—"}</span>
+                          <span className="text-xs text-foreground-muted">
+                            {deal.totalVideos || "—"}
+                          </span>
                         </td>
                       )}
                       {show("updatedAt") && (

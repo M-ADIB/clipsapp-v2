@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { UploadJob } from "@/lib/upload";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+const formatFileSize = formatBytes;
 
 interface UploadProgressBarProps {
   job: UploadJob;
@@ -30,13 +32,6 @@ function formatEta(seconds: number | null): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function StatusIcon({ status }: { status: string }) {

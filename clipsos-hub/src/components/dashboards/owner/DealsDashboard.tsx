@@ -25,6 +25,7 @@ import { useDashboardView, type DashboardColumn } from "@/components/dashboard/u
 import { DashboardColumnsPopover } from "@/components/dashboard/DashboardColumnsPopover";
 import { DashboardFilterPopover } from "@/components/dashboard/DashboardFilterPopover";
 import { DashboardSortPopover } from "@/components/dashboard/DashboardSortPopover";
+import { formatDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -66,15 +67,6 @@ const STAGE_BADGE: Record<string, "in_review" | "pending" | "approved" | "posted
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 /* ------------------------------------------------------------------ */
 /* Sub-components                                                      */
@@ -168,7 +160,7 @@ export function DealsDashboard() {
         (d) => d.name.toLowerCase().includes(q) || getPersonName(d).toLowerCase().includes(q),
       );
     }
-    
+
     const stageFilters = dashView.filters.stage;
     if (stageFilters && stageFilters.length > 0) {
       rows = rows.filter((d) => stageFilters.includes(d.stage ?? "No Stage"));
@@ -187,7 +179,8 @@ export function DealsDashboard() {
           comparison = (a.stage ?? "").localeCompare(b.stage ?? "");
           break;
         case "updated":
-          comparison = new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime();
+          comparison =
+            new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime();
           break;
         default:
           comparison = 0;
@@ -246,7 +239,7 @@ export function DealsDashboard() {
             )}
           </div>
           <div className="h-4 w-px bg-border" />
-          
+
           <DashboardColumnsPopover
             columns={COLUMNS}
             hidden={dashView.hidden}

@@ -31,18 +31,12 @@ import {
   type UploadSessionRow,
 } from "@/hooks/useUploadHistory";
 import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+const formatFileSize = formatBytes;
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
 /** Format bytes into human-readable KB / MB / GB. */
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const k = 1024;
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const val = bytes / Math.pow(k, i);
-  return `${val < 10 ? val.toFixed(1) : Math.round(val)} ${units[i]}`;
-}
 
 /** Format a duration in ms into "2m 34s" style. */
 function formatDuration(ms: number): string {

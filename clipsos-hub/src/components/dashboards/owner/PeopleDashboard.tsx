@@ -29,6 +29,7 @@ import { useDashboardView, type DashboardColumn } from "@/components/dashboard/u
 import { DashboardColumnsPopover } from "@/components/dashboard/DashboardColumnsPopover";
 import { DashboardFilterPopover } from "@/components/dashboard/DashboardFilterPopover";
 import { DashboardSortPopover } from "@/components/dashboard/DashboardSortPopover";
+import { formatDate } from "@/lib/format";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -71,15 +72,6 @@ function getInitials(name: string | null): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 function sourceBadgeColor(source: string | null): string {
@@ -214,7 +206,8 @@ export function PeopleDashboard() {
           comparison = (a.company_name ?? "").localeCompare(b.company_name ?? "");
           break;
         case "created":
-          comparison = new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime();
+          comparison =
+            new Date(a.created_at ?? 0).getTime() - new Date(b.created_at ?? 0).getTime();
           break;
         default:
           comparison = 0;
@@ -275,7 +268,10 @@ export function PeopleDashboard() {
                 {SOURCE_OPTIONS.map((s) => (
                   <DropdownItem
                     key={s}
-                    active={(s === "All" && !sourceFilter) || (s.toLowerCase() === sourceFilter.toLowerCase())}
+                    active={
+                      (s === "All" && !sourceFilter) ||
+                      s.toLowerCase() === sourceFilter.toLowerCase()
+                    }
                     onClick={() => {
                       const newFilter = s === "All" ? "" : s.toLowerCase();
                       setSourceFilter(newFilter);
@@ -291,7 +287,7 @@ export function PeopleDashboard() {
             )}
           </div>
           <div className="h-4 w-px bg-border" />
-          
+
           <DashboardColumnsPopover
             columns={COLUMNS}
             hidden={dashView.hidden}
