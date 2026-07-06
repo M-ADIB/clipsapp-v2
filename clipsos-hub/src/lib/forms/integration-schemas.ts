@@ -13,3 +13,10 @@ export const resendSettingsSchema = z.object({
   fromEmail: z.string(),
 });
 export type ResendSettingsValues = z.infer<typeof resendSettingsSchema>;
+
+/** Calendly settings — API key required, event filter optional. */
+export const calendlySettingsSchema = z.object({
+  apiKey: z.string().trim().min(1, "Please enter your Calendly API key."),
+  eventFilter: z.string(),
+});
+export type CalendlySettingsValues = z.infer<typeof calendlySettingsSchema>;
