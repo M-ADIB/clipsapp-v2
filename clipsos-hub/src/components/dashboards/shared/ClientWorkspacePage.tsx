@@ -24,8 +24,8 @@ import {
   AnalyticsTab,
   ActivityTab,
   SettingsTab,
-} from "./workspace";
-import { ClientBillingTab } from "./finance/ClientBillingTab";
+} from "@/components/dashboards/owner/workspace";
+import { ClientBillingTab } from "@/components/dashboards/owner/finance/ClientBillingTab";
 
 const TABS = [
   "Overview",

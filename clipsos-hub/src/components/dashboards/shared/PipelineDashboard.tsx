@@ -10,8 +10,8 @@ import { FullBleed } from "@/components/app-shell/FullBleed";
 import { useMemo, useState, type ReactNode } from "react";
 import { useCrmDeals } from "@/hooks/data";
 import { StatusBadge } from "@/components/dashboard";
-import { NewDealDialog } from "./pipeline/NewDealDialog";
-import { EditDealDialog } from "./pipeline/EditDealDialog";
+import { NewDealDialog } from "@/components/dashboards/owner/pipeline/NewDealDialog";
+import { EditDealDialog } from "@/components/dashboards/owner/pipeline/EditDealDialog";
 import {
   ArrowUpDown,
   ChevronDown,
