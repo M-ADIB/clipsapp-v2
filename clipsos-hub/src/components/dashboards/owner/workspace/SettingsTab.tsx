@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { ClientBillingTab } from "../finance/ClientBillingTab";
+import { InlineEditableField } from "./InlineEditableField";
 import { format } from "date-fns";
 
 interface SettingsTabProps {
@@ -129,7 +130,7 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
   const updateClient = useUpdateClient();
   const navigate = useNavigate();
   const { role } = useAuth();
-  
+
   const basePath = role === "manager" ? "/manager" : "/owner";
 
   // Active section selection
@@ -208,12 +209,15 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
         toast.error(`Failed to save: ${err.message || err}`);
       }
     },
-    [client, clientId, updateClient]
+    [client, clientId, updateClient],
   );
 
   // Active projects count
   const { data: projects = [] } = useProjectsByClient(clientId);
-  const activeProjectsCount = useMemo(() => projects.filter((p) => !p.archived_at).length, [projects]);
+  const activeProjectsCount = useMemo(
+    () => projects.filter((p) => !p.archived_at).length,
+    [projects],
+  );
 
   // Client Info Count Indicators
   const basicCount = useMemo(() => {
@@ -225,7 +229,12 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
   const solutionCount = useMemo(() => {
     if (!client) return "0/4";
     const settings = (client.settings as ClientSettings) || {};
-    const fields = [settings.solution_type, client.videos_per_month, client.account_status, client.start_date];
+    const fields = [
+      settings.solution_type,
+      client.videos_per_month,
+      client.account_status,
+      client.start_date,
+    ];
     return `${fields.filter(Boolean).length}/4`;
   }, [client]);
 
@@ -267,14 +276,11 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
       toast.error("Client email is required to send magic links.");
       return;
     }
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 1000)),
-      {
-        loading: "Sending magic link...",
-        success: `Magic link successfully sent to ${client.email}!`,
-        error: "Failed to send magic link.",
-      }
-    );
+    toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
+      loading: "Sending magic link...",
+      success: `Magic link successfully sent to ${client.email}!`,
+      error: "Failed to send magic link.",
+    });
   };
 
   // Toggle integrations helper
@@ -295,7 +301,11 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
 
   // Danger Zone - Archiving Client
   const handleArchiveClient = async () => {
-    if (!window.confirm("Are you sure you want to archive this client? This will restrict access and hide them from active lists.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to archive this client? This will restrict access and hide them from active lists.",
+      )
+    ) {
       return;
     }
     try {
@@ -314,9 +324,7 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
   if (error) {
     return (
       <div className="flex min-h-[300px] items-center justify-center rounded-lg border border-dashed border-status-danger/20">
-        <span className="text-sm text-status-danger">
-          Failed to load settings: {error.message}
-        </span>
+        <span className="text-sm text-status-danger">Failed to load settings: {error.message}</span>
       </div>
     );
   }
@@ -386,7 +394,7 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                     socialLinks.instagram.startsWith("http")
                       ? socialLinks.instagram
                       : `https://instagram.com/${socialLinks.instagram.replace("@", "")}`,
-                    "_blank"
+                    "_blank",
                   );
                 } else {
                   toast.info("Instagram handle not configured.");
@@ -444,7 +452,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                         : "text-foreground-muted border-transparent hover:bg-foreground/[0.01] hover:text-foreground-strong"
                     }`}
                   >
-                    <IconComp className={`h-4 w-4 ${isActive ? "text-primary" : "text-foreground-muted"}`} />
+                    <IconComp
+                      className={`h-4 w-4 ${isActive ? "text-primary" : "text-foreground-muted"}`}
+                    />
                     {item.label}
                   </button>
                 );
@@ -459,7 +469,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
           {activeSection === "client-info" && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-display text-foreground-strong">Client Info</h3>
+                <h3 className="text-xl font-bold font-display text-foreground-strong">
+                  Client Info
+                </h3>
                 <p className="text-sm text-foreground-muted">
                   Full profile, social links, resources, and workspace access
                 </p>
@@ -468,7 +480,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
               <div className="rounded-xl border border-border bg-surface-card p-6 shadow-sm flex flex-col gap-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
                   <div>
-                    <h4 className="text-base font-semibold text-foreground-strong">Client Information</h4>
+                    <h4 className="text-base font-semibold text-foreground-strong">
+                      Client Information
+                    </h4>
                     <p className="text-xs text-foreground-disabled">
                       Click any field to edit • Expand sections to view details
                     </p>
@@ -495,14 +509,14 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                   {/* Accordion 1: Basic Information */}
                   <div className="rounded-xl border border-border bg-surface-card overflow-hidden">
                     <button
-                      onClick={() =>
-                        setExpandedSections((p) => ({ ...p, basic: !p.basic }))
-                      }
+                      onClick={() => setExpandedSections((p) => ({ ...p, basic: !p.basic }))}
                       className="w-full flex items-center justify-between p-4 text-left border-b border-border/40 hover:bg-foreground/[0.01]"
                     >
                       <div className="flex items-center gap-2.5">
                         <Building2 className="h-4.5 w-4.5 text-foreground-muted" />
-                        <span className="font-semibold text-foreground-strong text-sm">Basic Information</span>
+                        <span className="font-semibold text-foreground-strong text-sm">
+                          Basic Information
+                        </span>
                         <span className="text-[10px] bg-foreground/[0.05] text-foreground-muted px-2 py-0.5 rounded-full font-bold">
                           {basicCount}
                         </span>
@@ -554,14 +568,14 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                   {/* Accordion 2: Solution & Subscription */}
                   <div className="rounded-xl border border-border bg-surface-card overflow-hidden">
                     <button
-                      onClick={() =>
-                        setExpandedSections((p) => ({ ...p, solution: !p.solution }))
-                      }
+                      onClick={() => setExpandedSections((p) => ({ ...p, solution: !p.solution }))}
                       className="w-full flex items-center justify-between p-4 text-left border-b border-border/40 hover:bg-foreground/[0.01]"
                     >
                       <div className="flex items-center gap-2.5">
                         <Film className="h-4.5 w-4.5 text-foreground-muted" />
-                        <span className="font-semibold text-foreground-strong text-sm">Solution & Subscription</span>
+                        <span className="font-semibold text-foreground-strong text-sm">
+                          Solution & Subscription
+                        </span>
                         <span className="text-[10px] bg-foreground/[0.05] text-foreground-muted px-2 py-0.5 rounded-full font-bold">
                           {solutionCount}
                         </span>
@@ -616,14 +630,14 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                   {/* Accordion 3: Social Media */}
                   <div className="rounded-xl border border-border bg-surface-card overflow-hidden">
                     <button
-                      onClick={() =>
-                        setExpandedSections((p) => ({ ...p, social: !p.social }))
-                      }
+                      onClick={() => setExpandedSections((p) => ({ ...p, social: !p.social }))}
                       className="w-full flex items-center justify-between p-4 text-left border-b border-border/40 hover:bg-foreground/[0.01]"
                     >
                       <div className="flex items-center gap-2.5">
                         <Instagram className="h-4.5 w-4.5 text-foreground-muted" />
-                        <span className="font-semibold text-foreground-strong text-sm">Social Media</span>
+                        <span className="font-semibold text-foreground-strong text-sm">
+                          Social Media
+                        </span>
                         <span className="text-[10px] bg-foreground/[0.05] text-foreground-muted px-2 py-0.5 rounded-full font-bold">
                           {socialCount}
                         </span>
@@ -692,7 +706,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                     >
                       <div className="flex items-center gap-2.5">
                         <Briefcase className="h-4.5 w-4.5 text-foreground-muted" />
-                        <span className="font-semibold text-foreground-strong text-sm">Professional Details</span>
+                        <span className="font-semibold text-foreground-strong text-sm">
+                          Professional Details
+                        </span>
                         <span className="text-[10px] bg-foreground/[0.05] text-foreground-muted px-2 py-0.5 rounded-full font-bold">
                           {professionalCount}
                         </span>
@@ -732,14 +748,14 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                   {/* Accordion 5: Goals & Interests */}
                   <div className="rounded-xl border border-border bg-surface-card overflow-hidden">
                     <button
-                      onClick={() =>
-                        setExpandedSections((p) => ({ ...p, goals: !p.goals }))
-                      }
+                      onClick={() => setExpandedSections((p) => ({ ...p, goals: !p.goals }))}
                       className="w-full flex items-center justify-between p-4 text-left border-b border-border/40 hover:bg-foreground/[0.01]"
                     >
                       <div className="flex items-center gap-2.5">
                         <Target className="h-4.5 w-4.5 text-foreground-muted" />
-                        <span className="font-semibold text-foreground-strong text-sm">Goals & Interests</span>
+                        <span className="font-semibold text-foreground-strong text-sm">
+                          Goals & Interests
+                        </span>
                         <span className="text-[10px] bg-foreground/[0.05] text-foreground-muted px-2 py-0.5 rounded-full font-bold">
                           {goalsCount}
                         </span>
@@ -785,7 +801,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
           {activeSection === "features-plans" && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-display text-foreground-strong">Features & Plans</h3>
+                <h3 className="text-xl font-bold font-display text-foreground-strong">
+                  Features & Plans
+                </h3>
                 <p className="text-sm text-foreground-muted">
                   Configure available modules, aspect ratios, color palettes, and branding assets
                 </p>
@@ -827,7 +845,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                 {/* Color Palette Manager */}
                 <div className="space-y-3">
                   <div>
-                    <h4 className="text-sm font-semibold text-foreground-strong">Brand Color Palette</h4>
+                    <h4 className="text-sm font-semibold text-foreground-strong">
+                      Brand Color Palette
+                    </h4>
                     <p className="text-xs text-foreground-disabled">
                       Set visual colors to help editors maintain brand identity consistency
                     </p>
@@ -900,7 +920,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                   <button
                     onClick={() => saveField("analytics_enabled", !client.analytics_enabled)}
                     className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
-                      client.analytics_enabled ? "bg-primary" : "bg-foreground/10 border border-border"
+                      client.analytics_enabled
+                        ? "bg-primary"
+                        : "bg-foreground/10 border border-border"
                     }`}
                   >
                     <span
@@ -952,7 +974,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                         <Facebook className="h-5 w-5" />
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-sm font-semibold text-foreground-strong">Facebook Ads</h4>
+                        <h4 className="text-sm font-semibold text-foreground-strong">
+                          Facebook Ads
+                        </h4>
                         <p className="text-xs text-foreground-muted leading-relaxed">
                           Track ad spend, leads, CPL, and campaign performance
                         </p>
@@ -1039,13 +1063,21 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-b border-border/40 pb-5">
                   <div className="flex items-center justify-between bg-surface-card-2 p-4 rounded-xl border border-border/50">
                     <div>
-                      <p className="text-sm font-semibold text-foreground-strong">Onboarding Status</p>
-                      <p className="text-xs text-foreground-muted">Has the onboarding form been finished</p>
+                      <p className="text-sm font-semibold text-foreground-strong">
+                        Onboarding Status
+                      </p>
+                      <p className="text-xs text-foreground-muted">
+                        Has the onboarding form been finished
+                      </p>
                     </div>
                     <button
-                      onClick={() => saveField("onboarding_completed", !client.onboarding_completed)}
+                      onClick={() =>
+                        saveField("onboarding_completed", !client.onboarding_completed)
+                      }
                       className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
-                        client.onboarding_completed ? "bg-emerald-500" : "bg-foreground/10 border border-border"
+                        client.onboarding_completed
+                          ? "bg-emerald-500"
+                          : "bg-foreground/10 border border-border"
                       }`}
                     >
                       <span
@@ -1071,7 +1103,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-semibold text-foreground-strong">Workspace Info</h4>
-                    <p className="text-xs text-foreground-disabled">Unique security credentials for workspace routing</p>
+                    <p className="text-xs text-foreground-disabled">
+                      Unique security credentials for workspace routing
+                    </p>
                   </div>
                   <div className="grid grid-cols-1 gap-4 font-mono text-xs">
                     <div className="flex justify-between border-b border-border/30 pb-2">
@@ -1080,7 +1114,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                     </div>
                     <div className="flex justify-between border-b border-border/30 pb-2">
                       <span className="text-foreground-muted">Workspace Token</span>
-                      <span className="text-foreground-strong">{client.workspace_token || "—"}</span>
+                      <span className="text-foreground-strong">
+                        {client.workspace_token || "—"}
+                      </span>
                     </div>
                     <div className="flex justify-between border-b border-border/30 pb-2">
                       <span className="text-foreground-muted">Workspace Slug</span>
@@ -1088,7 +1124,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                     </div>
                     <div className="flex justify-between border-b border-border/30 pb-2">
                       <span className="text-foreground-muted">Workspace Type</span>
-                      <span className="text-foreground-strong uppercase">{client.workspace_type}</span>
+                      <span className="text-foreground-strong uppercase">
+                        {client.workspace_type}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1100,7 +1138,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
           {activeSection === "team-access" && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-display text-foreground-strong">Team Access</h3>
+                <h3 className="text-xl font-bold font-display text-foreground-strong">
+                  Team Access
+                </h3>
                 <p className="text-sm text-foreground-muted">
                   Manage which team members can view and access this client's workspace and projects
                 </p>
@@ -1108,7 +1148,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
 
               <div className="rounded-xl border border-border bg-surface-card p-6 shadow-sm space-y-6">
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground-strong">Assigned Team Members</h4>
+                  <h4 className="text-sm font-semibold text-foreground-strong">
+                    Assigned Team Members
+                  </h4>
                   <p className="text-xs text-foreground-disabled">
                     These internal profiles are authorized to interact with this client's details
                   </p>
@@ -1140,7 +1182,10 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                         {assignments
                           .filter((a) => a.client_id === clientId)
                           .map((a: any) => (
-                            <tr key={a.id} className="border-b border-border last:border-0 hover:bg-foreground/[0.01]">
+                            <tr
+                              key={a.id}
+                              className="border-b border-border last:border-0 hover:bg-foreground/[0.01]"
+                            >
                               <td className="px-4 py-3 flex items-center gap-2.5">
                                 <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                                   {a.profile?.full_name?.charAt(0).toUpperCase() || "T"}
@@ -1160,7 +1205,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                               <td className="px-4 py-3 text-right">
                                 <button
                                   onClick={async () => {
-                                    if (window.confirm("Remove this team member's workspace access?")) {
+                                    if (
+                                      window.confirm("Remove this team member's workspace access?")
+                                    ) {
                                       await unassignTeamMember.mutateAsync({
                                         clientId,
                                         userId: a.user_id,
@@ -1201,7 +1248,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                       {team
                         .filter(
                           (member) =>
-                            !assignments.some((a) => a.client_id === clientId && a.user_id === member.id)
+                            !assignments.some(
+                              (a) => a.client_id === clientId && a.user_id === member.id,
+                            ),
                         )
                         .map((member) => (
                           <option key={member.id} value={member.id}>
@@ -1211,7 +1260,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
                     </select>
                     <button
                       onClick={async () => {
-                        const selectEl = document.getElementById("team-selector") as HTMLSelectElement;
+                        const selectEl = document.getElementById(
+                          "team-selector",
+                        ) as HTMLSelectElement;
                         if (!selectEl || !selectEl.value) {
                           toast.error("Please select a team member first");
                           return;
@@ -1315,7 +1366,9 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
           {activeSection === "danger-zone" && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-bold font-display text-foreground-strong">Danger Zone</h3>
+                <h3 className="text-xl font-bold font-display text-foreground-strong">
+                  Danger Zone
+                </h3>
                 <p className="text-sm text-foreground-muted">
                   Irreversible actions and workspace lifecycle settings
                 </p>
@@ -1346,176 +1399,6 @@ export function SettingsTab({ clientId }: SettingsTabProps) {
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── LOCAL INLINE FIELD COMPONENT ──────────────────────────────── */
-
-interface InlineFieldProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | null | undefined;
-  type?: "text" | "email" | "tel" | "select" | "date" | "number" | "textarea";
-  options?: { value: string; label: string }[];
-  placeholder?: string;
-  onSave: (val: string) => Promise<void>;
-  badge?: React.ReactNode;
-}
-
-export function InlineEditableField({
-  icon: Icon,
-  label,
-  value,
-  type = "text",
-  options = [],
-  placeholder = "Not set",
-  onSave,
-  badge,
-}: InlineFieldProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [inputValue, setInputValue] = useState(value ?? "");
-  const [isSaving, setIsSaving] = useState(false);
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(null);
-
-  useEffect(() => {
-    setInputValue(value ?? "");
-  }, [value]);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  const handleSave = async () => {
-    if (inputValue === (value ?? "")) {
-      setIsEditing(false);
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await onSave(inputValue);
-      setIsEditing(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && type !== "textarea") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      setInputValue(value ?? "");
-      setIsEditing(false);
-    }
-  };
-
-  const handleBlur = (e: React.FocusEvent) => {
-    if (
-      e.relatedTarget &&
-      (e.relatedTarget.id === `${label}-save` || e.relatedTarget.id === `${label}-cancel`)
-    ) {
-      return;
-    }
-    handleSave();
-  };
-
-  return (
-    <div
-      className="group flex flex-col gap-2 md:flex-row md:items-center md:justify-between py-3 border-b border-border/40 hover:bg-foreground/[0.01] px-2 rounded-md transition-colors"
-      onClick={() => {
-        if (!isEditing && !isSaving) setIsEditing(true);
-      }}
-    >
-      {/* Icon + Label */}
-      <div className="flex items-center gap-2.5 min-w-[200px] select-none cursor-pointer">
-        <Icon className="h-4 w-4 text-foreground-disabled" />
-        <span className="text-sm font-medium text-foreground-muted">{label}</span>
-      </div>
-
-      {/* Value Editor */}
-      <div className="flex-grow flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-        {isEditing ? (
-          <div className="flex items-center gap-2 w-full md:max-w-md">
-            {type === "textarea" ? (
-              <textarea
-                ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                rows={2}
-                className="w-full bg-surface-card-2 border border-border rounded px-2.5 py-1 text-sm text-foreground-strong focus:outline-none focus:border-primary resize-none"
-              />
-            ) : type === "select" ? (
-              <select
-                ref={inputRef as React.RefObject<HTMLSelectElement>}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onBlur={handleBlur}
-                className="w-full h-8 bg-surface-card-2 border border-border rounded px-2.5 text-sm text-foreground-strong focus:outline-none focus:border-primary"
-              >
-                {options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                ref={inputRef as React.RefObject<HTMLInputElement>}
-                type={type}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                className="w-full h-8 bg-surface-card-2 border border-border rounded px-2.5 text-sm text-foreground-strong focus:outline-none focus:border-primary"
-              />
-            )}
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                id={`${label}-save`}
-                onClick={handleSave}
-                disabled={isSaving}
-                className="p-1 rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 cursor-pointer"
-              >
-                {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-              </button>
-              <button
-                id={`${label}-cancel`}
-                onClick={() => {
-                  setInputValue(value ?? "");
-                  setIsEditing(false);
-                }}
-                disabled={isSaving}
-                className="p-1 rounded bg-surface border border-border text-foreground-disabled hover:bg-surface-raised cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-            {badge ? (
-              badge
-            ) : value ? (
-              <span className="text-foreground-strong font-mono">{value}</span>
-            ) : (
-              <span className="text-foreground-disabled italic text-xs">{placeholder}</span>
-            )}
-
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-foreground-disabled hover:text-foreground-muted">
-              <Pencil className="h-3.5 w-3.5" />
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
