@@ -16,6 +16,8 @@
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Loader2,
   Mail,
@@ -32,6 +34,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import tcaLogo from "@/assets/tca-logo.png";
 import { homeForRole } from "@/lib/role-routes";
+import { passwordLoginSchema, type PasswordLoginValues } from "@/lib/forms/auth-schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -262,27 +265,29 @@ function AuthCard() {
 function PasswordForm() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const search = Route.useSearch();
-  const emailRef = useRef<HTMLInputElement>(null);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  const form = useForm<PasswordLoginValues>({
+    resolver: zodResolver(passwordLoginSchema),
+    defaultValues: { email: "", password: "" },
+    mode: "onSubmit",
+  });
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    setFocus,
+    formState: { errors, isSubmitting },
+  } = form;
 
   // Auto-focus email on mount
   useEffect(() => {
-    emailRef.current?.focus();
-  }, []);
+    setFocus("email");
+  }, [setFocus]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password) return;
-
-    setSubmitting(true);
+  const onSubmit = async ({ email, password }: PasswordLoginValues) => {
     const { error } = await auth.signIn(email.trim(), password);
-    setSubmitting(false);
 
     if (error) {
       toast.error("Sign-in failed", {
@@ -299,11 +304,12 @@ function PasswordForm() {
   };
 
   const handleReset = async () => {
+    const email = getValues("email");
     if (!email.trim()) {
       toast.error("Enter your email first", {
         description: "Type your email address above, then click 'Forgot?'",
       });
-      emailRef.current?.focus();
+      setFocus("email");
       return;
     }
     setResetting(true);
@@ -320,7 +326,7 @@ function PasswordForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       {/* Email */}
       <div className="space-y-2">
         <Label htmlFor="login-email" className="text-xs text-foreground-muted">
@@ -329,17 +335,20 @@ function PasswordForm() {
         <div className="relative">
           <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-disabled" />
           <Input
-            ref={emailRef}
             id="login-email"
             type="email"
             autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@agency.com"
             className="h-11 bg-surface-input pl-10 text-sm"
+            aria-invalid={!!errors.email}
+            {...register("email")}
           />
         </div>
+        {errors.email && (
+          <p className="text-xs text-status-danger" role="alert">
+            {errors.email.message}
+          </p>
+        )}
       </div>
 
       {/* Password */}
@@ -363,11 +372,10 @@ function PasswordForm() {
             id="login-password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             className="h-11 bg-surface-input pl-10 pr-10 text-sm"
+            aria-invalid={!!errors.password}
+            {...register("password")}
           />
           <button
             type="button"
@@ -379,20 +387,21 @@ function PasswordForm() {
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
+        {errors.password && (
+          <p className="text-xs text-status-danger" role="alert">
+            {errors.password.message}
+          </p>
+        )}
       </div>
 
       {/* Submit */}
-      <Button
-        type="submit"
-        className="h-11 w-full text-sm font-medium"
-        disabled={submitting || !email.trim() || !password}
-      >
-        {submitting ? (
+      <Button type="submit" className="h-11 w-full text-sm font-medium" disabled={isSubmitting}>
+        {isSubmitting ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
           <ArrowRight className="mr-2 h-4 w-4" />
         )}
-        {submitting ? "Signing in…" : "Sign in"}
+        {isSubmitting ? "Signing in…" : "Sign in"}
       </Button>
     </form>
   );
