@@ -26,11 +26,13 @@ jobs:
         with:
           bun-version: latest
 
-      # NOTE: `bun install` resolves against the registry pinned in bun.lockb.
+      # NOTE: `bun install` resolves against the registry pinned in the lockfile.
       # If the project's private registry is not reachable from CI, configure
       # its auth via repo secrets (or repoint the lockfile at public npm).
+      # Non-frozen so the test-only devDeps reconcile against whatever registry
+      # CI uses.
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       # TEMPORARILY non-blocking: the repo has a large backlog of pre-existing
       # prettier/formatting violations (lint was never enforced). Run a
