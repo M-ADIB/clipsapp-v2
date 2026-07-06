@@ -66,6 +66,26 @@ export function useMarkNotificationRead() {
   });
 }
 
+export function useMarkAllNotificationsRead() {
+  const { tenantId, user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("tenant_id", tenantId!)
+        .eq("user_id", user!.id)
+        .eq("read", false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.list(tenantId!, user!.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount(tenantId!, user!.id) });
+    },
+  });
+}
+
 // ── Tasks ────────────────────────────────────────────────────────────────────
 
 export function useTasks(filters?: { assignedTo?: string; status?: string }) {
