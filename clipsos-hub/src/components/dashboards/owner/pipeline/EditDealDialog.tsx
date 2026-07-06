@@ -2,7 +2,9 @@
  * EditDealDialog — Edit an existing CRM deal.
  * Uses useUpdateCrmDeal mutation.
  */
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateCrmDeal } from "@/hooks/data";
 import { toast } from "sonner";
 
+import { dealSchema, REGIONS, STAGES, type DealFormValues } from "@/lib/forms/deal-schemas";
+
 interface DealData {
   id: string;
   name: string;
@@ -42,48 +46,54 @@ interface EditDealDialogProps {
   deal: DealData | null;
 }
 
-const STAGES = ["Pre-Booking Seat", "Payment Pending", "Closed/Paid", "Ghosted", "No Stage"];
-
-const REGIONS = ["UAE", "KSA", "USA", "UK", "EU", "Other"];
-
 export function EditDealDialog({ open, onOpenChange, deal }: EditDealDialogProps) {
   const updateDeal = useUpdateCrmDeal();
 
-  const [name, setName] = useState("");
-  const [plan, setPlan] = useState("");
-  const [stage, setStage] = useState("No Stage");
-  const [region, setRegion] = useState("UAE");
-  const [totalVideos, setTotalVideos] = useState("");
-  const [notes, setNotes] = useState("");
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<DealFormValues>({
+    resolver: zodResolver(dealSchema),
+    defaultValues: {
+      name: "",
+      personId: "",
+      plan: "",
+      stage: "No Stage",
+      region: "UAE",
+      totalVideos: "",
+      notes: "",
+    },
+  });
 
-  // Populate form when deal changes
+  // Populate the form when the deal changes.
   useEffect(() => {
     if (deal) {
-      setName(deal.name ?? "");
-      setPlan(deal.plan ?? "");
-      setStage(deal.stage ?? "No Stage");
-      setRegion(deal.region ?? "UAE");
-      setTotalVideos(deal.totalVideos ? String(deal.totalVideos) : "");
-      setNotes(deal.notes ?? "");
+      reset({
+        name: deal.name ?? "",
+        personId: "",
+        plan: deal.plan ?? "",
+        stage: deal.stage ?? "No Stage",
+        region: deal.region ?? "UAE",
+        totalVideos: deal.totalVideos ? String(deal.totalVideos) : "",
+        notes: deal.notes ?? "",
+      });
     }
-  }, [deal]);
+  }, [deal, reset]);
 
-  const handleSubmit = () => {
+  const onSubmit = (values: DealFormValues) => {
     if (!deal) return;
-    if (!name.trim()) {
-      toast.error("Deal name is required");
-      return;
-    }
-
     updateDeal.mutate(
       {
         id: deal.id,
-        name: name.trim(),
-        plan: plan || null,
-        stage,
-        region,
-        total_videos: totalVideos ? parseInt(totalVideos, 10) : null,
-        notes: notes || null,
+        name: values.name.trim(),
+        plan: values.plan || null,
+        stage: values.stage,
+        region: values.region,
+        total_videos: values.totalVideos ? parseInt(values.totalVideos, 10) : null,
+        notes: values.notes || null,
       },
       {
         onSuccess: () => {
@@ -107,89 +117,98 @@ export function EditDealDialog({ open, onOpenChange, deal }: EditDealDialogProps
           <DialogDescription>Update deal details — {deal.personName}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Deal Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ed-name">Deal Name</Label>
-            <Input id="ed-name" value={name} onChange={(e) => setName(e.target.value)} />
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="space-y-4 py-2">
+            {/* Deal Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-name">Deal Name</Label>
+              <Input id="ed-name" aria-invalid={!!errors.name} {...register("name")} />
+              {errors.name && (
+                <p className="text-xs text-status-danger" role="alert">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
+            {/* Plan + Stage */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="ed-plan">Plan</Label>
+                <Input id="ed-plan" {...register("plan")} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Stage</Label>
+                <Controller
+                  control={control}
+                  name="stage"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAGES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Region + Videos */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Region</Label>
+                <Controller
+                  control={control}
+                  name="region"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REGIONS.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ed-videos">Video Count</Label>
+                <Input id="ed-videos" type="number" min="0" {...register("totalVideos")} />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label htmlFor="ed-notes">Notes</Label>
+              <Textarea id="ed-notes" rows={3} {...register("notes")} />
+            </div>
           </div>
 
-          {/* Plan + Stage */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="ed-plan">Plan</Label>
-              <Input id="ed-plan" value={plan} onChange={(e) => setPlan(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Stage</Label>
-              <Select value={stage} onValueChange={setStage}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STAGES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Region + Videos */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Region</Label>
-              <Select value={region} onValueChange={setRegion}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {REGIONS.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ed-videos">Video Count</Label>
-              <Input
-                id="ed-videos"
-                type="number"
-                min="0"
-                value={totalVideos}
-                onChange={(e) => setTotalVideos(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ed-notes">Notes</Label>
-            <Textarea
-              id="ed-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={updateDeal.isPending}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={updateDeal.isPending || !name.trim()}>
-            {updateDeal.isPending ? "Saving…" : "Save Changes"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={updateDeal.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateDeal.isPending}>
+              {updateDeal.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
