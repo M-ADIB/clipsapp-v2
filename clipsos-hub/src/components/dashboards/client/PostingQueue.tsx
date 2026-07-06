@@ -7,12 +7,11 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { FullBleed } from "@/components/app-shell/FullBleed";
 import { Calendar } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMyClientIds } from "@/hooks/use-clients";
 
 import { useGridRows } from "@/components/grid/core/useGridRows";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceHeader } from "@/contexts/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "@/lib/format";
 
 // FullCalendar (core + daygrid + timegrid + interaction) is heavy and only
@@ -33,7 +32,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function PostingQueue() {
-  const { user, tenantId } = useAuth();
+  const { tenantId } = useAuth();
   const { setHeaderConfig, clearHeaderConfig } = useWorkspaceHeader();
   const [tab, setTab] = useState<Tab>("review");
 
@@ -47,18 +46,7 @@ export function PostingQueue() {
     return () => clearHeaderConfig();
   }, [tab, setHeaderConfig, clearHeaderConfig]);
 
-  const { data: clientIds = [] } = useQuery({
-    queryKey: ["client_access", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_access")
-        .select("client_id")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return (data ?? []).map((r) => r.client_id);
-    },
-  });
+  const { data: clientIds = [] } = useMyClientIds();
 
   const primaryClientId = clientIds[0];
   const scope = useMemo(() => ({ clientId: primaryClientId }), [primaryClientId]);

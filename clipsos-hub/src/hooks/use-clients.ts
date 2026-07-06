@@ -62,6 +62,27 @@ export function useClientList() {
   });
 }
 
+/**
+ * Client ids the current user has access to (via client_access). Used by the
+ * client-role pages to resolve "my" client. Shared by ClientMyVideos +
+ * PostingQueue (previously duplicated inline queries).
+ */
+export function useMyClientIds() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["client_access", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_access")
+        .select("client_id")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.client_id);
+    },
+  });
+}
+
 // ─── Single client detail (by UUID) ─────────────────────────────────────────
 
 export function useClient(clientId: string | undefined) {
